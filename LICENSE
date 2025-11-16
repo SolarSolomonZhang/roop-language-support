@@ -1,8 +1,8 @@
 ROOP Language Support — License and Notices
 
 Table of Contents
-1. License Summary (non-normative)
-2. MIT License (normative)
+1. License Summary
+2. MIT License
 3. Notices and Clarifications (do not modify the MIT License)
    3.1 Scope of License
    3.2 High-Risk Activity and Safety Guidance
@@ -15,10 +15,10 @@ Table of Contents
 4. Contribution Terms
 5. Contact
 
-1. License Summary (non-normative)
+1. License Summary
 This project is released under the permissive MIT License. You may use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, provided that the copyright and permission notices are included. The software is provided as-is, without warranties or liability. The sections titled "Notices and Clarifications" are explanatory and do not add restrictions or change the rights granted by the MIT License.
 
-2. MIT License (normative)
+2. MIT License
 MIT License
 
 Copyright (c) 2025 Loop Robotics and contributors
