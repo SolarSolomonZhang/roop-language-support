@@ -1,0 +1,451 @@
+// concurrency.roop
+// Version: 1.0
+// Purpose: Comprehensive concurrency patterns, templates, and tasks for ROOP.
+// The script follows the ROOP Language Reference and VS Code extension grammar.
+// -----------------------------------------------------------------------------
+// TABLE OF CONTENTS
+//  0. Conventions & Setup
+//  1. Reusable Templates (Concurrency Primitives)
+//     1.1  "ExclusiveRun" – run a task with exclusive access to a resource
+//     1.2  "RetryWithBackoff" – retry policy with exponential backoff
+//     1.3  "GuardedRunWithTimeout" – await a task under a timeout
+//     1.4  "EventDrivenHandler" – attach structured event handlers
+//     1.5  "MapReduce" – fan-out work in parallel and fan-in results (fixed workers)
+//     1.6  "StartWatchdog" – detached monitor with periodic checks
+//     1.7  "RaceFirstSuccess" – run competitors; first success wins (event-based)
+//     1.8  "ProducerConsumer" – staged pipeline with bounded degree (fixed workers)
+//     1.9  "EscalationChain" – fallback & escalation on failure
+//  2. System & Safety Tasks
+//     2.1  "PrepHardware"
+//     2.2  "SafetySentinel"
+//  3. Household & IoT Tasks
+//     3.1  "MorningRoutineConcurrent"
+//     3.2  "CleanAndDisinfect"
+//  4. Industrial / Warehouse Tasks
+//     4.1  "ConcurrentPickAndPlace"
+//     4.2  "BatchKittingMapReduce"
+//  5. Healthcare & Assistive Tasks
+//     5.1  "VitalsMonitorWithEscalation"
+//  6. Multi‑Robot Coordination
+//     6.1  "DualOperationWithRendezvous"
+//  7. Security & Patrol
+//     7.1  "PatrolWithDetectors"
+// -----------------------------------------------------------------------------
+
+
+// 0. CONVENTIONS & SETUP -------------------------------------------------------
+// - Use two-space indentation.
+// - Block headers end with a colon.
+// - Concurrency primitives used: parallel, await run, detached run, synchronize,
+//   with timeout, every, on <event|failure|timeout|deviation>, retry, fallback.
+// - Resource coordination: "with exclusive access to" <resource>.
+// - Semantic selectors: object/area/surface/pose/label, relations like on/near/in.
+
+start task "SetupModules"
+  // Declare commonly used logical modules (bindings resolved by runtime).
+  use module "Arm1"
+  use module "Gripper1"
+  use module "Camera1"
+  use module "Speaker"
+  use module "Light1"
+  use module "Base1"
+end task
+
+
+// 1. REUSABLE TEMPLATES (CONCURRENCY PRIMITIVES) ------------------------------
+
+// 1.1 Run a task with exclusive access to a resource.
+template task "ExclusiveRun"(taskName, resource)
+  run taskName with exclusive access to resource
+
+// 1.2 Retry policy with exponential backoff (maxAttempts >= 1, baseDelaySec >= 1).
+template task "RetryWithBackoff"(taskName, maxAttempts, baseDelaySec)
+  let attempt = 1
+  while attempt <= maxAttempts:
+    let ok = await run taskName
+    if ok == true:
+      exit
+    else:
+      let delay = baseDelaySec * (2 ^ (attempt - 1))
+      say "Retrying {taskName} in {delay} seconds (attempt {attempt+1} of {maxAttempts})."
+      wait {delay} seconds
+      attempt = attempt + 1
+  // If we got here, all attempts failed.
+  abort
+
+// 1.3 Await a task with a hard timeout; return false on timeout.
+template task "GuardedRunWithTimeout"(taskName, timeoutSec)
+  let result = null
+  with timeout {timeoutSec} seconds:
+    result = await run taskName
+  on timeout:
+    say "{taskName} timed out after {timeoutSec}s."
+    result = false
+  return result
+
+// 1.4 Attach event-driven handlers around an action body.
+template task "EventDrivenHandler"(actionName)
+  // Example event wiring (names vary by module; strings keep it generic).
+  when "arm.ready":
+    say "Arm is ready for {actionName}."
+  when "arm.motion.failed":
+    say "Motion failed during {actionName}."
+  when "arm.contact.detected":
+    say "Unexpected contact; pausing for inspection."
+    abort
+  run actionName
+
+// 1.5 Fan-out/fan-in (fixed workers): run map workers over items in parallel, then reduce.
+template task "MapReduce"(items)
+  // Set inputs for workers.
+  let mapInputs = items
+  let mapsLaunched = 0
+  parallel:
+    for it in mapInputs:
+      let currentMapItem = it
+      detached run "MapWorker"
+      mapsLaunched = mapsLaunched + 1
+  // Wait for all maps to signal completion (conceptual rendezvous).
+  sync when "mapsLaunched" == "mapsCompleted":
+    say "All map workers finished."
+  run "ReduceWorker"
+
+start task "MapWorker"
+  // Read the implicit input variable set by the launcher.
+  // Do one unit of work and signal completion as an event or counter update.
+  say "MapWorker processing item."
+  // In a real runtime, this would emit an event; here we just log.
+end task
+
+start task "ReduceWorker"
+  say "Reducing mapped results."
+end task
+
+// 1.6 Start a detached watchdog that ticks periodically.
+template task "StartWatchdog"(name, periodSec)
+  let watchdogName = name
+  let watchdogPeriod = periodSec
+  detached run "WatchdogLoop"
+
+start task "WatchdogLoop"
+  every 5 seconds:
+    say "[{watchdogName}] heartbeat"
+    // Example checks: controller state, temperatures, comms.
+
+// 1.7 Race: start two competitors that emit success events; first success wins.
+template task "RaceFirstSuccess"(taskA, taskB)
+  parallel:
+    detached run taskA
+    detached run taskB
+  sync when "TaskA.success" or "TaskB.success":
+    say "First success observed; cancelling remainder."
+    abort
+
+// 1.8 Producer/Consumer with bounded degree (k consumers, fixed worker names).
+template task "ProducerConsumer"(k)
+  detached run "Producer"
+  parallel:
+    repeat k times:
+      detached run "Consumer"
+  sync when "queue" == "empty":
+    say "All items processed."
+
+start task "Producer"
+  every 2 seconds:
+    say "Producing an item."
+
+start task "Consumer"
+  every 3 seconds:
+    say "Consuming an item."
+
+// 1.9 Escalation chain: primary → retry → fallback → escalate.
+template task "EscalationChain"(primaryTask, fallbackTask, notifyTarget)
+  let ok = await run primaryTask
+  on failure:
+    say "Primary failed; applying retry policy."
+    call "RetryWithBackoff"(primaryTask, 3, 2)
+  on failure:
+    say "Retry exhausted; invoking fallback."
+    let f = await run fallbackTask
+    if f != true:
+      notify notifyTarget "Escalation required."
+      abort
+  return true
+
+
+// 2. SYSTEM & SAFETY TASKS ----------------------------------------------------
+
+start task "PrepHardware"
+  use module "Arm1"
+  use module "Gripper1"
+  use module "Camera1"
+  use module "Speaker"
+
+  // Calibrate and home in sequence; run diagnostics concurrently.
+  parallel:
+    run "CalibrateArm" with exclusive access to "Arm1"
+    run "WarmupGripper" with exclusive access to "Gripper1"
+    detached run "Diagnostics"
+  await run "LoadWorldModel"
+  say "Hardware prepared."
+end task
+
+template task "CalibrateArm"()
+  say "Homing and enabling motors."
+  // Example actions (module backs these verbs).
+  move Arm1 to pose "Home"
+  say "Arm homed."
+
+template task "WarmupGripper"()
+  say "Testing gripper open/close."
+  grasp with Gripper1
+  release with Gripper1
+
+template task "Diagnostics"()
+  every 5 seconds:
+    say "Checking controller state, joint temps, and comms."
+  when "arm.over_torque":
+    say "Over torque detected; aborting."
+    abort
+  when "arm.comm.lost":
+    say "Communication lost; pausing operations."
+    abort
+
+template task "LoadWorldModel"()
+  say "Loading semantic labels and landmarks."
+
+// Safety sentinel reacts to critical events in parallel with any mission.
+start task "SafetySentinel"
+  use module "Speaker"
+  detached run "MonitorSafetyEvents"
+  say "Safety sentinel armed."
+end task
+
+template task "MonitorSafetyEvents"()
+  when "arm.estop":
+    say "Emergency stop asserted; aborting all motions."
+    abort
+  when "arm.joint_limit":
+    say "Joint limit reached; stopping motion."
+    abort
+
+
+// 3. HOUSEHOLD & IoT TASKS ----------------------------------------------------
+
+start task "MorningRoutineConcurrent"
+  use module "Speaker"
+  use module "Light1"
+  use module "Base1"
+
+  parallel:
+    at time "07:00":
+      say "Good morning"
+      turn on "Light1"
+    run "BrewCoffee"
+    detached run "AmbientMusic"
+  synchronize at "BreakfastReady"
+  say "Morning routine complete."
+end task
+
+template task "BrewCoffee"()
+  with timeout 120 seconds:
+    say "Starting coffee machine."
+    turn on "CoffeeMachine"
+  on timeout:
+    say "Coffee machine did not respond; alerting user."
+    notify user "Coffee machine timeout."
+
+template task "AmbientMusic"()
+  every 10 minutes:
+    play "MorningPlaylist"
+
+start task "CleanAndDisinfect"
+  use module "Arm1"
+  use module "Gripper1"
+
+  parallel:
+    run "CollectPlates"
+    run "DisinfectSurfaces"
+  synchronize at "SinkReady"
+  say "Cleaning complete."
+end task
+
+template task "CollectPlates"()
+  let plates = detect all object "plate" on "Table"
+  for p in plates:
+    move Arm1 to p
+    grasp with Gripper1
+    move Arm1 to "Sink"
+    release with Gripper1
+
+template task "DisinfectSurfaces"()
+  scan area "Countertop"
+  wipe surface "Countertop"
+
+
+// 4. INDUSTRIAL / WAREHOUSE TASKS --------------------------------------------
+
+start task "ConcurrentPickAndPlace"
+  use module "Arm1"
+  use module "Gripper1"
+  use module "Camera1"
+
+  // Launch perception and motion planning concurrently.
+  parallel:
+    detached run "WatchForVisitors"  // HRI monitor
+    run "PickPlaceLotA" with exclusive access to "Arm1"
+  say "Lot A complete."
+end task
+
+template task "WatchForVisitors"()
+  when object "human" appears near "Workcell":
+    say "Please stand clear of the robot."
+    abort
+
+template task "PickPlaceLotA"()
+  let items = detect all object "box" on "ShelfA"
+  for it in items:
+    // Set per-item context for the worker task.
+    let currentItem = it
+    call "GuardedRunWithTimeout"("PickAndPlaceOne_Task", 15)
+
+start task "PickAndPlaceOne_Task"
+  // Uses 'currentItem' from the caller's scope if supported by the runtime.
+  call "PickAndPlaceOne"(currentItem)
+
+template task "PickAndPlaceOne"(item)
+  // Use one-liner capability if provided by module:
+  pick object "box" and place to pose "PalletA"
+  on failure:
+    say "Pick/place failed; retrying with lower speed."
+    set "Arm1" speed 0.1
+    retry after 2 seconds
+  on failure:
+    say "Second attempt failed; skipping item."
+
+start task "BatchKittingMapReduce"
+  let parts = ["Bolt", "Nut", "Bracket", "Panel"]
+  // Launch map workers in parallel.
+  parallel:
+    for p in parts:
+      let currentPart = p
+      detached run "KitWorker"
+  synchronize at "Kitting-Join"
+  run "PalletizeKits"
+  say "Kitting completed."
+end task
+
+start task "KitWorker"
+  move Arm1 to object currentPart
+  grasp with Gripper1
+  move Arm1 to "KitTray"
+  release with Gripper1
+
+start task "PalletizeKits"
+  say "Palletizing completed kits."
+
+
+// 5. HEALTHCARE & ASSISTIVE TASKS --------------------------------------------
+
+start task "VitalsMonitorWithEscalation"
+  use module "Speaker"
+
+  parallel:
+    detached run "VitalsMonitorLoop"
+    run "DeliverWater"
+  say "Care session active."
+end task
+
+template task "VitalsMonitorLoop"()
+  every 30 seconds:
+    let normal = await run "ReadVitals"
+    if normal != true:
+      call "EscalationChain"("RecheckVitals", "CallCaregiver", "NurseStation")
+
+template task "ReadVitals"()
+  // Placeholder for sensor reads; return boolean.
+  say "Reading vitals…"
+  return true
+
+template task "RecheckVitals"()
+  wait 10 seconds
+  say "Rechecking vitals…"
+  return true
+
+template task "CallCaregiver"()
+  notify "NurseStation" "Abnormal vitals detected."
+  return true
+
+template task "DeliverWater"()
+  run "FetchItem-Task"
+
+start task "FetchItem-Task"
+  call "FetchItem"(object "water bottle")
+
+template task "FetchItem"(item)
+  move Arm1 to item
+  grasp with Gripper1
+  move Arm1 to "Bedside"
+  release with Gripper1
+
+
+// 6. MULTI‑ROBOT COORDINATION -------------------------------------------------
+
+start task "DualOperationWithRendezvous"
+  // Assign roles; dispatch to named robots.
+  assign "BotA" as surveyor
+  assign "BotB" as carrier
+
+  parallel:
+    dispatch task "ScanRoom" to BotA
+    dispatch task "FetchObject" to BotB
+
+  synchronize at "RoomExit"
+  say "Team rendezvous complete."
+end task
+
+start task "ScanRoom"
+  scan area "Room1"
+  map
+
+start task "FetchObject"
+  // Default target for this demonstration.
+  let target = object "package"
+  move Arm1 to target
+  grasp with Gripper1
+  move Arm1 to "HandoffPoint"
+  release with Gripper1
+
+
+// 7. SECURITY & PATROL --------------------------------------------------------
+
+start task "PatrolWithDetectors"
+  use module "Base1"
+  use module "Camera1"
+  use module "Speaker"
+
+  detached run "IntrusionWatch"
+  run "PatrolLoop"
+end task
+
+template task "IntrusionWatch"()
+  when detect human:
+    say "Visitor detected. Recording."
+    record
+    notify user "Visitor detected during patrol."
+
+template task "PatrolLoop"()
+  parallel:
+    run "PatrolRouteA"
+    run "PatrolRouteB"
+  synchronize at "Dock"
+  dock
+  say "Patrol complete."
+
+template task "PatrolRouteA"()
+  navigate to "Checkpoint-A1"
+  navigate to "Checkpoint-A2"
+
+template task "PatrolRouteB"()
+  navigate to "Checkpoint-B1"
+  navigate to "Checkpoint-B2"

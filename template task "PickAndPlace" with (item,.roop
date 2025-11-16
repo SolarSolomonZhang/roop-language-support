@@ -1,0 +1,115 @@
+template task "PickAndPlace" with (item, source, destination):
+  use module "Arm1"
+  use module "Gripper1"
+
+  // reach & grasp
+  move Arm1 to source
+  grasp with Gripper1
+  on failure:
+    retry
+    fallback:
+      say "Grasp failed; notifying operator."
+      notify "PickAndPlace failed at grasp step" 
+
+  // place
+  move Arm1 to destination
+  release with Gripper1
+  on failure:
+    fallback:
+      say "Release failed; placing item on nearby surface."
+      place item on "NearbySurface"
+end task
+
+
+start task "WarmUpSensors"
+  use module "Camera1"
+  use module "Lidar1"
+  say "Warming up sensors…"
+
+  parallel:
+    turn on "Camera1"
+    turn on "Lidar1"
+
+  // quick health check (mock)
+  repeat 2 times:
+    log "Sensor heartbeat OK"
+end task
+
+
+start task "WatchForVisitors"
+  use module "Camera1"
+  use module "Speaker"
+
+  when object "human" appears:
+    say "Hello! Welcome."
+    notify "Visitor detected at entry"
+end task
+
+
+start task "DeliverCoffee"
+  use module "Base1"
+  use module "Arm1"
+  use module "Gripper1"
+
+  say "Heading to kitchen."
+  navigate to "Kitchen"
+
+  move Arm1 to "CoffeeMachine"
+  grasp with Gripper1
+  on failure:
+    retry
+    fallback:
+      say "Cannot grasp the cup; requesting assistance."
+      notify "DeliverCoffee: cup grasp fallback"
+
+  move Arm1 to "Tray"
+  release with Gripper1
+
+  say "Delivering to living room."
+  navigate to "LivingRoom"
+
+  present "coffee" to "user"
+  say "Here is your coffee. Enjoy!"
+end task
+
+
+start task "ScanAndTidy"
+  use module "Base1"
+  use module "Arm1"
+  use module "Gripper1"
+
+  say "Starting room scan."
+  await run "WarmUpSensors"
+
+  // simple patrol-then-tidy loop
+  repeat 2 times:
+    navigate to "LivingRoom"
+    run "SpotClean"
+
+  // while there is trash detected, pick one and bin it
+  while object "trash" exists on "Floor":
+    run "PickupTrash"
+end task
+
+
+start task "SpotClean"
+  use module "Base1"
+  use module "Arm1"
+  use module "Gripper1"
+
+  observe area "LivingRoom"
+  if object "cup" near "Table":
+    // reuse the template with parameters
+    run "PickAndPlace" with ("cup", "Table", "Sink")
+  elseif object "book" on "Sofa":
+    run "PickAndPlace" with ("book", "Sofa", "Shelf")
+  else:
+    say "No clutter found here."
+end task
+
+
+start task "PickupTrash"
+  use module "Arm1"
+  use module "Gripper1"
+
+  move Arm1 to object "trash

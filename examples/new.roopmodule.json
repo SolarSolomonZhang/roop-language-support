@@ -1,0 +1,30 @@
+{
+  "module": {
+    "id": "example.module",
+    "name": "Example Module",
+    "version": "1.0.0",
+    "vendor": "Example Vendor"
+  },
+  "capabilities": [
+    {
+      "id": "example.say",
+      "verbs": ["say"],
+      "parameters": [
+        {
+          "name": "text",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "safety": {
+    "emergencyStop": true,
+    "speedLimit": 0.2
+  },
+  "profiles": [
+    {
+      "name": "home",
+      "defaults": {}
+    }
+  ]
+}

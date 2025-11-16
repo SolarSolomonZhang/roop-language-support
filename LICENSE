@@ -1,0 +1,74 @@
+ROOP Language Support — License and Notices
+
+Table of Contents
+1. License Summary (non-normative)
+2. MIT License (normative)
+3. Notices and Clarifications (do not modify the MIT License)
+   3.1 Scope of License
+   3.2 High-Risk Activity and Safety Guidance
+   3.3 Robotics-Specific Safety Expectations
+   3.4 Third-Party Components and Sub-licenses
+   3.5 Documentation, Examples, and Sample Assets
+   3.6 Trademarks
+   3.7 Export Compliance
+   3.8 Privacy and Telemetry
+4. Contribution Terms
+5. Contact
+
+1. License Summary (non-normative)
+This project is released under the permissive MIT License. You may use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, provided that the copyright and permission notices are included. The software is provided as-is, without warranties or liability. The sections titled "Notices and Clarifications" are explanatory and do not add restrictions or change the rights granted by the MIT License.
+
+2. MIT License (normative)
+MIT License
+
+Copyright (c) 2025 Loop Robotics and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+3. Notices and Clarifications (do not modify the MIT License)
+
+3.1 Scope of License
+These notices are informational only and do not alter, supersede, or add restrictions to the MIT License above. If a conflict appears to exist, the MIT License text controls.
+
+3.2 High-Risk Activity and Safety Guidance
+This software is not designed or certified for use in hazardous environments or high-risk activities (including, without limitation, life-support systems, emergency dispatch, aircraft navigation or communication systems, air traffic control, nuclear facilities, medical devices, or weapons systems). If you choose to deploy the software in contexts where failure could result in injury, death, or severe environmental or property damage, you are solely responsible for implementing appropriate risk assessments, redundancies, supervision, and safety certifications.
+
+3.3 Robotics-Specific Safety Expectations
+The software includes a domain-specific language and tooling that can be used to orchestrate automation and robotics tasks through separate hardware or service modules. The software itself does not control hardware directly and does not provide safety guarantees. You are responsible for validating task logic, guarding dangerous motions, enforcing stop conditions, and complying with applicable safety standards (for example, ISO 10218, ISO/TS 15066, IEC 61508, or regional equivalents). Always test tasks in simulation or restricted modes before live operation. Provide physical e-stop mechanisms and administrative controls when deploying on real systems.
+
+3.4 Third-Party Components and Sub-licenses
+This project may include or depend upon third-party packages, tools, or assets. Each third-party component remains subject to its own license. Nothing in this document purports to grant rights to third-party code or trademarks. See the repository’s dependency metadata and the respective upstream license files for details.
+
+3.5 Documentation, Examples, and Sample Assets
+Documentation, example scripts, test files, schemas, and sample module manifests are provided to illustrate usage patterns. Unless stated otherwise in their headers, these materials are licensed under the MIT License together with the software. If a file carries a different license header, that header controls for that file.
+
+3.6 Trademarks
+"Visual Studio Code" and any Microsoft marks are trademarks or registered trademarks of Microsoft Corporation. Other names and logos may be trademarks of their respective owners. This license does not grant permission to use any trade names, logos, or trademarks of Loop Robotics or any third party.
+
+3.7 Export Compliance
+You are responsible for compliance with U.S. and international export laws and regulations that may apply to your use and distribution of the software and any data, models, or hardware you control with it.
+
+3.8 Privacy and Telemetry
+This project does not intentionally collect personal data or transmit telemetry on its own. If you enable telemetry features in your editor or platform, their respective privacy policies apply. Scripts you author may send data to services you choose; you are responsible for informing users and meeting applicable privacy obligations.
+
+4. Contribution Terms
+By submitting a contribution (including pull requests, issues with patches, or code snippets), you agree that your contribution is licensed under the MIT License and that you have the legal right to submit it. You retain copyright to your contributions. If your employer has rights to the intellectual property you create, you represent that you have received permission to make the contribution on its behalf where required. You agree not to knowingly include third-party content without the appropriate license.
+
+5. Contact
+For security or legal inquiries, see the repository homepage for current contact details. If you operate the software in a safety-critical environment, establish your own internal procedures for incident reporting and mitigation.

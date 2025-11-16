@@ -1,0 +1,6 @@
+task "hello-world":
+  when:
+    always: true
+  do:
+    say: "hello"
+end

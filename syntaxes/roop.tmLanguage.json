@@ -1,0 +1,534 @@
+{
+  "scopeName": "source.roop",
+  "name": "ROOP",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#blockHeaders"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#durations"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#booleansNull"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#control"
+    },
+    {
+      "include": "#triggers"
+    },
+    {
+      "include": "#lifecycle"
+    },
+    {
+      "include": "#actions"
+    },
+    {
+      "include": "#spatial"
+    },
+    {
+      "include": "#entities"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "include": "#punctuation"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.roop",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "blockHeaders": {
+      "patterns": [
+        {
+          "name": "meta.block.header.roop",
+          "begin": "^(\\s*)(?:(when|on|at|if|elseif|else|repeat|while|for|parallel|context|with\\s+timeout|every|sync\\s+when|detached\\s+run|await\\s+run|run|template\\s+task|start\\s+task))\\b(.*?)(:)\\s*$",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.control.header.roop"
+            },
+            "3": {
+              "name": "meta.block.header.args.roop"
+            },
+            "4": {
+              "name": "punctuation.separator.colon.roop"
+            }
+          },
+          "end": "(?=^\\s*(?:when|on|at|if|elseif|else|repeat|while|for|parallel|template\\s+task|start\\s+task|end\\s+task)\\b|\\Z)",
+          "patterns": [
+            {
+              "include": "#comments"
+            },
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#durations"
+            },
+            {
+              "include": "#operators"
+            },
+            {
+              "include": "#actions"
+            },
+            {
+              "include": "#spatial"
+            },
+            {
+              "include": "#entities"
+            },
+            {
+              "include": "#variables"
+            }
+          ]
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.roop",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.roop"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.roop"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.roop",
+              "match": "\\\\."
+            },
+            {
+              "name": "meta.interpolation.roop",
+              "begin": "\\{",
+              "beginCaptures": {
+                "0": {
+                  "name": "punctuation.section.interpolation.begin.roop"
+                }
+              },
+              "end": "\\}",
+              "endCaptures": {
+                "0": {
+                  "name": "punctuation.section.interpolation.end.roop"
+                }
+              },
+              "patterns": [
+                {
+                  "include": "#variables"
+                },
+                {
+                  "include": "#numbers"
+                },
+                {
+                  "include": "#operators"
+                },
+                {
+                  "include": "#entities"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.integer.roop",
+          "match": "(?<!\\w)-?\\b\\d+\\b"
+        },
+        {
+          "name": "constant.numeric.float.roop",
+          "match": "(?<!\\w)-?\\b\\d+\\.\\d+\\b"
+        }
+      ]
+    },
+    "durations": {
+      "patterns": [
+        {
+          "name": "constant.numeric.duration.roop",
+          "match": "\\b\\d+(?:\\.\\d+)?\\s*(?:ms|s|sec(?:onds?)?|m(?:in(?:utes?)?)?|h(?:ours?)?)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.roop",
+          "match": "\\b(?:and|or|not)\\b"
+        },
+        {
+          "name": "keyword.operator.comparison.roop",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.membership.roop",
+          "match": "\\b(?:in|contains)\\b"
+        },
+        {
+          "name": "keyword.operator.relational.roop",
+          "match": "\\b(?:is|near|before|after|between|within|as|to|from|by|with|over|under|around|across|through|onto|into|relative\\s+to|anchor\\s+on)\\b"
+        }
+      ]
+    },
+    "booleansNull": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.true.roop",
+          "match": "\\btrue\\b"
+        },
+        {
+          "name": "constant.language.boolean.false.roop",
+          "match": "\\bfalse\\b"
+        },
+        {
+          "name": "constant.language.null.roop",
+          "match": "\\bnull\\b"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "name": "meta.declaration.variable.roop",
+          "begin": "\\b(let)\\s+([A-Za-z_][\\w\\-]*)\\b\\s*(=)?",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.declaration.roop"
+            },
+            "2": {
+              "name": "variable.other.roop"
+            },
+            "3": {
+              "name": "keyword.operator.assignment.roop"
+            }
+          },
+          "end": "$|(?=//)",
+          "patterns": [
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#durations"
+            },
+            {
+              "include": "#entities"
+            },
+            {
+              "include": "#operators"
+            }
+          ]
+        },
+        {
+          "name": "meta.declaration.module.roop",
+          "begin": "\\b(use\\s+module)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.module.roop"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "support.class.module.roop",
+              "match": "\"[^\"]+\"|[A-Za-z_][\\w\\-]*"
+            }
+          ]
+        },
+        {
+          "name": "meta.declaration.template.roop",
+          "begin": "\\b(template\\s+task)\\b\\s*(\"[^\"]+\"|[A-Za-z_][\\w\\-]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.template.roop"
+            },
+            "2": {
+              "name": "entity.name.function.template.roop"
+            }
+          },
+          "end": "$|(?=:)"
+        },
+        {
+          "name": "meta.declaration.task.roop",
+          "begin": "\\b(start\\s+task)\\b\\s*(\"[^\"]+\"|[A-Za-z_][\\w\\-]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.task.roop"
+            },
+            "2": {
+              "name": "entity.name.function.task.roop"
+            }
+          },
+          "end": "$|(?=:)"
+        },
+        {
+          "name": "keyword.control.task.end.roop",
+          "match": "\\bend\\s+task\\b"
+        },
+        {
+          "name": "meta.call.template.roop",
+          "begin": "\\b(call)\\b\\s*(\"[^\"]+\"|[A-Za-z_][\\w\\-]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "support.function.call.roop"
+            },
+            "2": {
+              "name": "entity.name.function.template.roop"
+            }
+          },
+          "end": "$"
+        },
+        {
+          "name": "meta.call.run.roop",
+          "begin": "\\b(run)\\b\\s*(\"[^\"]+\"|[A-Za-z_][\\w\\-]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "support.function.run.roop"
+            },
+            "2": {
+              "name": "entity.name.function.task.roop"
+            }
+          },
+          "end": "$|(?=:)"
+        },
+        {
+          "name": "meta.lifecycle.control.roop",
+          "match": "\\b(?:start\\s+task|pause\\s+task|resume\\s+task|stop\\s+task)\\b"
+        },
+        {
+          "name": "meta.module.lifecycle.roop",
+          "match": "\\b(?:load\\s+module|unload\\s+module|reload\\s+module|scan\\s+devices?|bind|match|register)\\b"
+        },
+        {
+          "name": "meta.assignment.set.roop",
+          "begin": "\\b(set)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.other.set.roop"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#durations"
+            },
+            {
+              "include": "#variables"
+            }
+          ]
+        },
+        {
+          "name": "meta.declare.roop",
+          "begin": "\\b(declare|define|assign|alias)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.other.declare.roop"
+            }
+          },
+          "end": "$"
+        }
+      ]
+    },
+    "control": {
+      "patterns": [
+        {
+          "name": "keyword.control.conditional.roop",
+          "match": "\\b(?:if|elseif|else)\\b"
+        },
+        {
+          "name": "keyword.control.loop.roop",
+          "match": "\\b(?:repeat|while|for)\\b"
+        },
+        {
+          "name": "keyword.control.flow.roop",
+          "match": "\\b(?:break|continue|exit|return)\\b"
+        },
+        {
+          "name": "keyword.control.parallel.roop",
+          "match": "\\bparallel\\b"
+        }
+      ]
+    },
+    "triggers": {
+      "patterns": [
+        {
+          "name": "keyword.control.trigger.when.roop",
+          "match": "\\bwhen\\b"
+        },
+        {
+          "name": "keyword.control.trigger.on.roop",
+          "match": "\\bon\\b\\s*(?:failure|success|timeout|deviation|interruption|result|event)?\\b"
+        },
+        {
+          "name": "keyword.control.trigger.at.roop",
+          "match": "\\bat\\b(?:\\s+time)?\\b"
+        },
+        {
+          "name": "keyword.control.trigger.time.roop",
+          "match": "\\b(?:every|with\\s+timeout|wait|delay|countdown|until|expect|ask|wait\\s+for)\\b"
+        },
+        {
+          "name": "keyword.control.async.roop",
+          "match": "\\b(?:await|detached)\\b"
+        },
+        {
+          "name": "keyword.control.exception.roop",
+          "match": "\\b(?:abort|retry|fallback|max\\s+retries)\\b"
+        }
+      ]
+    },
+    "lifecycle": {
+      "patterns": [
+        {
+          "name": "keyword.control.task.lifecycle.roop",
+          "match": "\\b(?:pause\\s+task|resume\\s+task|start\\s+task|stop\\s+task)\\b"
+        },
+        {
+          "name": "keyword.other.synchronize.roop",
+          "match": "\\b(?:synchronize|sync\\s+when)\\b"
+        }
+      ]
+    },
+    "actions": {
+      "patterns": [
+        {
+          "name": "support.function.action.roop",
+          "match": "\\b(?:say|display|notify|log|record|report)\\b"
+        },
+        {
+          "name": "support.function.motion.roop",
+          "match": "\\b(?:move|navigate|go|follow|track|observe|rotate|turn\\s+on|turn\\s+off|dim|blink|place|grasp|release|hold|align|approach|adjust\\s+pose|plan|transform|scan|detect|highlight|play|pause|resume|open|close|use)\\b"
+        },
+        {
+          "name": "support.function.ability.roop",
+          "match": "\\b(?:pick_and_place|pick\\s*and\\s*place)\\b"
+        },
+        {
+          "name": "support.function.comm.roop",
+          "match": "\\b(?:dispatch\\s+task|assign|use\\s+module|call|run)\\b"
+        }
+      ]
+    },
+    "spatial": {
+      "patterns": [
+        {
+          "name": "support.type.spatial.roop",
+          "match": "\\b(?:position|pose|reference|offset|landmark|world|room|floor|hallway|zone|area|surface|anchor|frame|path|height|width|distance|angle|speed|acceleration)\\b"
+        },
+        {
+          "name": "keyword.other.spatial.prep.roop",
+          "match": "\\b(?:relative\\s+to|anchor\\s+on|near|over|under|in|on|into|onto|across|through|around|between|within|to|from|at)\\b"
+        }
+      ]
+    },
+    "entities": {
+      "patterns": [
+        {
+          "name": "support.class.object.roop",
+          "match": "\\b(?:object|objects|human|user|pet|robot|module|task|door|cup|mug|bottle|plate|tray|sofa|table|desk|shelf|bin|lamp|light|camera|gripper|arm|base|speaker|screen|oven|microwave|elevator|stairs)\\b"
+        },
+        {
+          "name": "support.class.semantic.roop",
+          "match": "\\b(?:label|color|material|state|owner|size|confiden(?:ce|tly)|probably|similar)\\b"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.parameter.as.roop",
+          "begin": "\\bas\\b\\s+([A-Za-z_][\\w\\-]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "variable.other.roop"
+            }
+          },
+          "end": "$|(?=//)"
+        },
+        {
+          "name": "variable.other.reference.roop",
+          "match": "\\b[A-Za-z_][\\w\\-]*\\b"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.colon.roop",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.separator.comma.roop",
+          "match": ","
+        },
+        {
+          "name": "punctuation.section.braces.begin.roop",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.braces.end.roop",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.section.brackets.begin.roop",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.brackets.end.roop",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.section.parens.begin.roop",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.roop",
+          "match": "\\)"
+        }
+      ]
+    }
+  },
+  "foldingStartMarker": "^\\s*(?:when|on|at|if|elseif|else|repeat|while|for|parallel|context|with\\s+timeout|every|sync\\s+when|detached\\s+run|await\\s+run|run|template\\s+task|start\\s+task)\\b.*:\\s*$",
+  "foldingStopMarker": "^\\s*(?:end\\s+task)\\b"
+}

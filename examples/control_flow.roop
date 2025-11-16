@@ -1,0 +1,473 @@
+// ============================================================================
+// File: control.roop
+// Purpose: Comprehensive control, triggers, exceptions, concurrency, safety,
+//          and a task-oriented language catalog covering human-typical tasks.
+// Language & Grammar: ROOP v0.3 surface syntax, block headers end with ':',
+//          two-space indentation, 'start task' ... 'end task' for top-level tasks.
+//          See Language Reference and TextMate grammar used by the VS Code extension.
+//          References: Language Reference, TextMate grammar, language configuration,
+//          extension package keywords, .roopmodule schema, arm module manifest.
+// ============================================================================
+
+// ============================================================================
+// Table of Contents (TOC)
+// 0. Preamble & Conventions
+// 1. Core Control Primitives (templates)
+//    1.1 WithTimeout
+//    1.2 WithRetries
+//    1.3 GuardedRun
+//    1.4 CancelOrAbort
+//    1.5 PauseResumeStop
+// 2. Triggers & Scheduling Patterns
+//    2.1 TimeBased, EventBased, Periodic
+// 3. Exception & Recovery Patterns
+//    3.1 OnFailure/Timeout/Deviation/Interruption
+//    3.2 RetryWithBackoff, FallbackPlan, MaxRetries
+// 4. Concurrency & Synchronization Patterns
+//    4.1 ParallelFanOut, AwaitAll, DetachedMonitors, Rendezvous
+// 5. Safety & System Control
+//    5.1 EmergencyStop, SlowMode, SystemCalibration
+// 6. Language Catalog (Human Task Oriented, templates)
+//    6.1 Motion & Navigation
+//    6.2 Manipulation & Tool Use
+//    6.3 Vision & Perception
+//    6.4 Speech/Audio/Display & HRI
+//    6.5 Smart-Home & IoT
+//    6.6 Healthcare & Assistive
+//    6.7 Hospitality/Retail/Service
+//    6.8 Industrial & Warehouse
+//    6.9 Household & Domestic
+//    6.10 Education & Research
+//    6.11 Safety & Compliance
+// 7. Arm & Manipulation Mappings (module-backed verbs)
+// 8. IoT Controls (Lights, Thermostats, Locks, Blinds, Panels)
+// 9. Dialogue & User Interaction (ask/expect/wait for)
+// 10. Multi-Robot Coordination
+// 11. Testing Constructs & Harness
+// 12. Combined Example Flows
+// ============================================================================
+
+
+// ============================================================================
+// #region 0. Preamble & Conventions
+// Conventions used:
+// - Two-space indentation, all block headers end with ':'
+// - Tasks are top-level with 'start task' ... 'end task'
+// - Templates are reusable blocks declared with 'template task "Name"(params):'
+// - Use 'on failure|timeout|deviation|interruption:' handlers after actions/blocks
+// - Use 'parallel:' for concurrency; 'await run' for awaiting; 'detached run' for monitors
+// - Use 'synchronize' or 'sync when' for rendezvous/coordination
+// - Use semantic selectors: object "mug", area "Table", surface "Countertop", pose "Home"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 1. Core Control Primitives (templates)
+// 1.1 WithTimeout: bounds the execution time of an inner task by a duration
+template task "WithTimeout"(taskName, seconds):
+  with timeout {seconds} seconds:
+    await run {taskName}
+  on timeout:
+    notify "Timed out while running {taskName}"
+
+
+// 1.2 WithRetries: uniform retry around a subtask with optional delay seconds
+template task "WithRetries"(taskName, maxRetries, delaySec):
+  let attempt = 0
+  while attempt < {maxRetries}:
+    let result = await run {taskName}
+    if result == "success":
+      exit
+    else:
+      attempt = attempt + 1
+      if attempt < {maxRetries}:
+        retry after {delaySec} seconds
+  // If here, retries exhausted without success
+  notify "Task {taskName} exhausted {maxRetries} attempts"
+
+
+// 1.3 GuardedRun: run a subtask only if guard expression holds
+template task "GuardedRun"(taskName, guardExpr):
+  if {guardExpr}:
+    await run {taskName}
+  else:
+    log "Guard prevented running {taskName}"
+
+
+// 1.4 CancelOrAbort: pattern to stop activity early using a condition
+template task "CancelOrAbort"(watchTask, conditionExpr):
+  detached run {watchTask}
+  when {conditionExpr}:
+    abort
+    log "Aborted due to condition"
+
+
+// 1.5 PauseResumeStop: simple control verbs for motion or long-running tasks
+template task "PauseResumeStop"(mode):
+  if {mode} == "pause":
+    pause
+  elseif {mode} == "resume":
+    resume
+  elseif {mode} == "stop":
+    stop
+  else:
+    log "Unknown mode {mode}"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 2. Triggers & Scheduling Patterns
+// 2.1 Time-based schedule
+template task "TimeBased"(hhmm, innerTask):
+  at time "{hhmm}":
+    await run {innerTask}
+
+// Periodic schedule using 'every'
+template task "Periodic"(intervalSec, innerTask):
+  every {intervalSec} seconds:
+    await run {innerTask}
+
+// Event-based trigger: semantic condition
+template task "EventBased"(conditionExpr, innerTask):
+  when {conditionExpr}:
+    await run {innerTask}
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 3. Exception & Recovery Patterns
+// 3.1 Handlers after actions/blocks
+template task "OnFailureTimeoutDeviation"(taskName):
+  await run {taskName}
+  on failure:
+    say "I encountered a failure while running {taskName}"
+    retry after 2 seconds
+  on timeout:
+    notify "Timeout in {taskName}"
+  on deviation:
+    log "Deviation detected in {taskName}"
+
+// 3.2 Retry with exponential backoff and fallback plan
+template task "RetryWithBackoff"(taskName, maxRetries, baseDelaySec, fallbackTask):
+  let attempt = 0
+  while attempt < {maxRetries}:
+    let result = await run {taskName}
+    if result == "success":
+      exit
+    else:
+      let delay = {baseDelaySec} * (attempt + 1)
+      attempt = attempt + 1
+      if attempt < {maxRetries}:
+        say "Retrying {taskName} after {delay} seconds"
+        retry after {delay} seconds
+  fallback:
+    await run {fallbackTask}
+
+// 3.3 Declarative max retries around a single step
+template task "BoundedRetry"(taskName, n):
+  max retries {n}:
+    await run {taskName}
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 4. Concurrency & Synchronization Patterns
+// 4.1 Fan-out parallel execution of independent tasks
+template task "ParallelFanOut"(t1, t2, t3):
+  parallel:
+    run {t1}
+    run {t2}
+    run {t3}
+
+// 4.2 Await all by explicit awaits
+template task "AwaitAll"(t1, t2):
+  let r1 = await run {t1}
+  let r2 = await run {t2}
+  log "t1={r1}, t2={r2}"
+
+// 4.3 Detached monitors (long-running observers)
+template task "DetachedMonitors"(monitorTask):
+  detached run {monitorTask}
+  say "Monitor {monitorTask} is running in background"
+
+// 4.4 Rendezvous via explicit synchronize token
+template task "Rendezvous"(pointName):
+  synchronize at "{pointName}"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 5. Safety & System Control
+// Emergency stop, slow mode, and system calibration
+template task "EmergencyStop"():
+  abort
+
+template task "SlowMode"(speedScalar):
+  set "Arm1" speed {speedScalar}
+
+template task "CalibrateSystem"():
+  // Calibrate, reset, restart, shutdown are valid system verbs
+  calibrate
+  say "Calibration requested"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 6. Language Catalog (Human Task Oriented, templates)
+// 6.1 Motion & Navigation
+template task "MoveTo"(actor, target):
+  move {actor} to {target}
+
+template task "RotateTo"(actor, target):
+  rotate {actor} to {target}
+
+template task "NavigateTo"(place):
+  navigate to {place}
+
+template task "Follow"(selector):
+  follow {selector}
+
+template task "StopMotion"():
+  stop
+
+// 6.2 Manipulation & Tool Use
+template task "Grasp"(gripper, poseOrObject):
+  if {poseOrObject} is object:
+    move Arm1 to {poseOrObject}
+  grasp with {gripper}
+
+template task "Release"(gripper):
+  release with {gripper}
+
+template task "PickAndPlace"(item, destination):
+  move Arm1 to {item}
+  grasp with Gripper1
+  move Arm1 to {destination}
+  release with Gripper1
+
+template task "OperateDoor"(verb, handleObject):
+  // verb: open | close | press (button)
+  {verb} {handleObject}
+
+template task "ScrewOp"(verb, fastener, torqueNm):
+  // verb: screw | unscrew | tighten | loosen
+  {verb} fastener at {fastener}
+  set torque {torqueNm}
+
+// 6.3 Vision & Perception
+template task "ScanArea"(areaName):
+  scan area "{areaName}"
+
+template task "DetectObject"(label, inArea):
+  detect object "{label}" in "{inArea}"
+
+template task "TrackObject"(selector):
+  track {selector}
+
+// 6.4 Speech/Audio/Display & HRI
+template task "SayText"(text):
+  say "{text}"
+
+template task "AskText"(question, varName):
+  ask "{question}" as {varName}
+
+template task "DisplayOnPanel"(message, panel):
+  display "{message}" on "{panel}"
+
+// 6.5 Smart-Home & IoT
+template task "TurnOn"(device):
+  turn on "{device}"
+
+template task "TurnOff"(device):
+  turn off "{device}"
+
+template task "SetTemperature"(thermostat, degrees):
+  set "{thermostat}" to {degrees}
+
+template task "LockUnlock"(verb, doorName):
+  // verb: lock | unlock
+  {verb} "{doorName}"
+
+// 6.6 Healthcare & Assistive
+template task "RemindMedication"():
+  say "Time for medication."
+
+template task "MonitorBreathing"():
+  detached run "ObserveBreathing"
+
+// 6.7 Hospitality/Retail/Service
+template task "GreetGuest"():
+  say "Welcome"
+
+// 6.8 Industrial & Warehouse
+template task "Palletize"(box, pallet):
+  // placeholder intent; module-specific planner may realize this
+  say "Palletize {box} onto {pallet}"
+
+// 6.9 Household & Domestic
+template task "WipeSurface"(surface):
+  wipe surface "{surface}"
+
+// 6.10 Education & Research
+template task "LogTrial"(msg):
+  log "{msg}"
+
+// 6.11 Safety & Compliance
+template task "WaitForSafe"(zone):
+  wait for area "{zone}" to be clear
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 7. Arm & Manipulation Mappings (module-backed verbs)
+// Notes: Verbs and parameters align with loop.arm.v1 module: move/approach/align/rotate/tilt/pan,
+//        grasp/release/hold, pick and place, open/close/press, screw/unscrew/tighten/loosen.
+//        Use 'Arm1' and 'Gripper1' as logical resources. See module manifest.
+//        (Mapping reference aligned with module capability list.)
+// ============================================================================
+
+template task "Arm_MoveToPose"(poseName, speed, accel, tol_mm):
+  move Arm1 to pose "{poseName}"
+  set linearSpeed {speed}
+  set acceleration {accel}
+  set tolerance {tol_mm} mm
+
+template task "Arm_AlignAbove"(objectSelector, referenceFrame):
+  align Arm1 to {objectSelector} relative to "{referenceFrame}"
+
+template task "Arm_Grasp"(gripper, targetOrPose, forceN, timeoutSec):
+  if {targetOrPose} is object:
+    move Arm1 to {targetOrPose}
+  grasp with {gripper}
+  on failure:
+    say "Grasp failed, reducing speed and retrying"
+    set "Arm1" speed 0.1
+    retry after 1 seconds
+  on timeout:
+    notify "Grasp timeout after {timeoutSec} seconds"
+
+template task "Arm_PickAndPlace"(item, destinationPose):
+  pick {item} and place to {destinationPose}
+
+template task "Arm_OpenOrPress"(verb, target, forceN):
+  // verb in: open | close | open door | close door | press
+  {verb} {target}
+
+template task "Arm_ScrewDriving"(verb, fastener, torqueNm):
+  // verb in: screw | unscrew | tighten | loosen
+  {verb} fastener at {fastener}
+  set torque {torqueNm}
+
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 8. IoT Controls (Lights, Thermostats, Locks, Blinds, Panels)
+template task "Lights_Set"(device, levelPct):
+  set "{device}" brightness {levelPct}
+
+template task "Blinds"(verb, target):
+  // verb: open | close
+  {verb} "{target}"
+
+template task "Panel_DisplayTotal"(panel, totalText):
+  display "{totalText}" on "{panel}"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 9. Dialogue & User Interaction
+template task "ConfirmAndProceed"(question, onYesTask, onNoTask):
+  ask "{question}" as confirm
+  if confirm == "yes":
+    await run {onYesTask}
+  else:
+    await run {onNoTask}
+
+template task "NotifyAndLog"(message):
+  notify "{message}"
+  log "{message}"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 10. Multi-Robot Coordination
+template task "AssignRolesAndDispatch"(surveyor, carrier, surveyTask, fetchTask, rendezvousPoint):
+  assign "{surveyor}" as surveyor
+  assign "{carrier}" as carrier
+  parallel:
+    dispatch task {surveyTask} to {surveyor}
+    dispatch task {fetchTask} to {carrier}
+  synchronize at "{rendezvousPoint}"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 11. Testing Constructs & Harness
+template task "Test_PickPlates"():
+  testcase "PickPlates" for task "CleanPlates"
+    simulate object "plate" on "Table"
+    run task "CleanPlates"
+    expect move Arm1 to "Table"
+    expect release with Gripper1 at "Sink"
+// ============================================================================
+// #endregion
+
+
+// ============================================================================
+// #region 12. Combined Example Flows
+
+start task "Control_DemoSuite"
+  use module "Arm1"
+  use module "Gripper1"
+  use module "Speaker"
+  use module "Light1"
+  use module "Panel1"
+
+  // Scheduling examples
+  at time "07:00":
+    run "SayText"("Good morning")
+
+  every 900 seconds:
+    run "NotifyAndLog"("Periodic status check")
+
+  // Event-based reaction (semantic binding)
+  when object "mug" with color "red" appears on "Table":
+    parallel:
+      run "Arm_PickAndPlace"(object "mug", pose "Tray")
+      detached run "DisplayOnPanel"("Delivering mug", "Panel1")
+
+  // Control: pause/resume/stop
+  run "PauseResumeStop"("pause")
+  run "PauseResumeStop"("resume")
+
+  // Exceptions & Recovery
+  run "RetryWithBackoff"("Arm_Grasp", 3, 2, "SayText")
+
+  // Safety & System
+  // run "EmergencyStop"()  // Uncomment to abort
+
+  // IoT
+  run "TurnOn"("Light1")
+  run "Lights_Set"("Light1", 40)
+
+  // Rendezvous point
+  run "Rendezvous"("Exit")
+
+end task
+
+// ============================================================================
+// #endregion
+
+// End of control.roop

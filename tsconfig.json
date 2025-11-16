@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "ROOP VS Code Extension + LSP Server (strict)",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": ".",
+    "outDir": "out",
+    "sourceMap": true,
+    "inlineSources": true,
+    "declaration": true,
+    "declarationMap": true,
+    "tsBuildInfoFile": "out/.tsbuildinfo",
+    "incremental": true,
+    "newLine": "lf",
+    "removeComments": false,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "vscode"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "preserveWatchOutput": true,
+    "allowJs": false,
+    "checkJs": false
+  },
+  "watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicpriority",
+    "synchronousWatchDirectory": false,
+    "excludeDirectories": ["**/node_modules", "**/.git", "out"]
+  },
+  "include": [
+    "extension.ts",
+    "server.ts",
+    "src/**/*.ts",
+    "client/**/*.ts",
+    "server/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "out",
+    ".vscode-test",
+    "scripts/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

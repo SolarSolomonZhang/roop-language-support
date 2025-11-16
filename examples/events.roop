@@ -1,0 +1,384 @@
+// ============================================================================
+// File: events.roop
+// Purpose: Event-driven orchestration library for ROOP tasks
+// Author: Project scaffolding for comprehensive human task coverage
+// ============================================================================
+//
+// TABLE OF CONTENTS
+// 0. Conventions and Sources
+// 1. Imports, Modules, and Global Context
+// 2. Constants and Utility State
+// 3. Templates — Event Primitives
+//    3.1 RetryWithBackoff
+//    3.2 NotifyUser
+//    3.3 LogEvent
+//    3.4 Debounce
+//    3.5 Throttle
+//    3.6 GuardExclusiveResource
+//    3.7 RecoverFromFault
+// 4. Time-Based Events
+//    4.1 Daily/Hourly schedules
+//    4.2 Interval timers and countdowns
+// 5. Perception-Driven Events
+//    5.1 Appear/Disappear/Move
+//    5.2 Area cleared/occupied; near/on/in relations
+// 6. Module Events — Arm (loop.arm.v1)
+//    6.1 Ready/Started/Completed/Failed
+//    6.2 Contact/OverTorque/JointLimit
+//    6.3 EStop/CommLost
+// 7. Environment & IoT Events
+//    7.1 Lights/Climate/Locks
+//    7.2 Threshold crossings (temperature, humidity, air quality)
+// 8. Dialogue & HRI Events
+//    8.1 Human presence, questions, confirmations
+// 9. Multi‑Robot Coordination & Synchronization
+// 10. Safety & Compliance Event Patterns
+// 11. Diagnostics, Telemetry Watchers & Testing Hooks
+// 12. Event Router — one place to subscribe & dispatch
+//
+// Sources used for syntax/keywords and capabilities:
+// - Language triggers & handlers: when, on, at, every, with timeout, wait, delay,
+//   countdown, until, expect, ask, wait for, await run, detached run, parallel,
+//   synchronize, etc. Reference: ROOP Language Reference and grammar. :contentReference[oaicite:4]{index=4} :contentReference[oaicite:5]{index=5}
+// - Built‑in verbs, entities, spatial prepositions (broad human task coverage)
+//   exposed by the VS Code extension configuration. :contentReference[oaicite:6]{index=6}
+// - Arm module async events used in Section 6: arm.ready, arm.motion.started,
+//   arm.motion.completed, arm.motion.failed, arm.contact.detected,
+//   arm.over_torque, arm.joint_limit, arm.estop, arm.comm.lost. :contentReference[oaicite:7]{index=7}
+// ============================================================================
+
+
+// 1) IMPORTS, MODULES, AND GLOBAL CONTEXT
+// ----------------------------------------------------------------------------
+// Advice: declare the modules you intend to bind to event handlers up front.
+// "use module" and task scaffolding per language spec. :contentReference[oaicite:8]{index=8}
+
+start task "Events.Bootstrap"
+  use module "Arm1"
+  use module "Gripper1"
+  use module "Camera1"
+  use module "Speaker"
+  use module "Light1"
+  use module "EnvSensors"   // ambient temperature/humidity/air quality
+  use module "DoorLock"
+end task
+
+
+// 2) CONSTANTS AND UTILITY STATE
+// ----------------------------------------------------------------------------
+start task "Events.State"
+  let defaultBackoff = 2      // seconds
+  let maxBackoff = 30         // seconds
+  let maxRetries = 5
+  let debounceWindow = 500    // ms
+  let throttleWindow = 2000   // ms
+
+  // Named poses / areas used in examples
+  let PoseHome = pose "Home"
+  let AreaTray = area "Tray"
+  let SurfaceCounter = surface "Countertop"
+end task
+
+
+// 3) TEMPLATES — EVENT PRIMITIVES
+// ----------------------------------------------------------------------------
+
+template task "RetryWithBackoff"(what, attempts, startDelay, maxDelay):
+  // Exponential backoff with cap; verbs/handlers per language. :contentReference[oaicite:9]{index=9}
+  let i = 0
+  let delaySec = startDelay
+  while i < attempts:
+    run what
+    on success:
+      return
+    on failure:
+      wait delaySec s
+      delaySec = delaySec * 2
+      if delaySec > maxDelay:
+        delaySec = maxDelay
+      i = i + 1
+  abort
+end task
+
+template task "NotifyUser"(message, level):
+  // say/display/notify are core built‑ins for HRI and UI. :contentReference[oaicite:10]{index=10}
+  say message
+  display message on "Panel1"
+  notify user message
+end task
+
+template task "LogEvent"(source, name, payload):
+  log "Event from {source}: {name} -> {payload}"
+  record "event" as "{source}:{name}"
+  report "{source}:{name}"  // generic reporting hook
+end task
+
+template task "Debounce"(key, windowMs, bodyTask):
+  // Debounce generic handler by key; relies on simple time gap.
+  let lastKey = "debounce.{key}"
+  // Implementation detail depends on runtime; illustrative guard only.
+  run bodyTask
+end task
+
+template task "Throttle"(key, windowMs, bodyTask):
+  // Throttle generic handler by key; illustrative.
+  run bodyTask
+end task
+
+template task "GuardExclusiveResource"(resourceName, bodyTask):
+  // Example of exclusive access guard. :contentReference[oaicite:11]{index=11}
+  run bodyTask with exclusive access to resourceName
+end task
+
+template task "RecoverFromFault"(faultName):
+  // Structured recovery: retry, fallback, or abort. :contentReference[oaicite:12]{index=12}
+  say "Attempting recovery from {faultName}"
+  fallback:
+    say "Switching to fallback for {faultName}"
+end task
+
+
+// 4) TIME‑BASED EVENTS
+// ----------------------------------------------------------------------------
+// Triggers include "at", "every", "wait", "countdown", and "with timeout". :contentReference[oaicite:13]{index=13}
+
+start task "Events.Time.DailyRoutine"
+  at time "07:00":
+    say "Good morning"
+    turn on "Light1"
+end task
+
+start task "Events.Time.Intervals"
+  every 15 minutes:
+    display "Status heartbeat"
+    log "Heartbeat tick"
+end task
+
+start task "Events.Time.CountdownExample"
+  countdown 10 s:
+    say "Starting in 10 seconds"
+  on timeout:
+    say "Countdown finished"
+end task
+
+
+// 5) PERCEPTION‑DRIVEN EVENTS
+// ----------------------------------------------------------------------------
+// Use selectors & relations: object/area/surface/zone/label/pose/reference,
+// with predicates like appears/near/on/in/clear/reachable. :contentReference[oaicite:14]{index=14}
+
+start task "Events.Perception.ObjectAppear"
+  when object "mug" with color "red" appears on SurfaceCounter:
+    move Arm1 to object "mug"
+    grasp with Gripper1
+    move Arm1 to AreaTray
+    release with Gripper1
+  on failure:
+    call "RetryWithBackoff"("Events.Perception.RecoverPick", 3, 2, 10)
+end task
+
+start task "Events.Perception.RecoverPick"
+  say "Recovering pick attempt"
+  scan area SurfaceCounter
+  detect object "mug" with color "red"
+end task
+
+start task "Events.Perception.AreaClear"
+  when surface "CoffeeTable" is clear:
+    say "Surface is clear."
+end task
+
+
+// 6) MODULE EVENTS — ARM (loop.arm.v1)
+// ----------------------------------------------------------------------------
+// The following async events come from the arm module manifest and are usable
+// in 'when'/'on event' blocks: arm.ready, arm.motion.started, arm.motion.completed,
+// arm.motion.failed, arm.contact.detected, arm.over_torque, arm.joint_limit,
+// arm.estop, arm.comm.lost. :contentReference[oaicite:15]{index=15}
+
+start task "Events.Arm.Core"
+  on event "arm.ready":
+    say "Arm is ready"
+    run "Arm.GoHome"
+
+  on event "arm.motion.started":
+    log "Arm motion started"
+
+  on event "arm.motion.completed":
+    log "Arm motion completed"
+    call "NotifyUser"("Motion completed", "notice")
+
+  on event "arm.motion.failed":
+    call "NotifyUser"("Motion failure", "warning")
+    call "RecoverFromFault"("motion failed")
+
+  on event "arm.contact.detected":
+    say "Contact detected; backing off"
+    move Arm1 to PoseHome
+    call "NotifyUser"("Unexpected contact", "warning")
+
+  on event "arm.over_torque":
+    call "NotifyUser"("Over‑torque detected", "warning")
+    call "RecoverFromFault"("over_torque")
+
+  on event "arm.joint_limit":
+    call "NotifyUser"("Joint limit reached", "warning")
+    call "RecoverFromFault"("joint_limit")
+
+  on event "arm.estop":
+    say "Emergency stop asserted"
+    abort
+
+  on event "arm.comm.lost":
+    call "NotifyUser"("Arm communication lost", "error")
+    call "RecoverFromFault"("comm_lost")
+end task
+
+start task "Arm.GoHome"
+  move Arm1 to PoseHome
+end task
+
+
+// 7) ENVIRONMENT & IoT EVENTS
+// ----------------------------------------------------------------------------
+// Verbs like turn on/off, set/dim/adjust/lock/unlock are part of built‑in
+// coverage for common human tasks; see extension config keywords. :contentReference[oaicite:16]{index=16}
+
+start task "Events.Env.Lights"
+  when human appears near "Door":
+    turn on "Light1"
+  at time "23:00":
+    turn off "Light1"
+end task
+
+start task "Events.Env.Climate"
+  when measure temperature from "EnvSensors" > 28:
+    call "NotifyUser"("Room is hot; cooling on", "info")
+    set "Thermostat" to 22
+end task
+
+start task "Events.Env.Security"
+  when object "intruder" appears near "Entrance":
+    lock "FrontDoor"
+    alert "Security"    // notify path via notify/log/display verbs
+end task
+
+
+// 8) DIALOGUE & HRI EVENTS
+// ----------------------------------------------------------------------------
+// HRI verbs: say, ask, expect, listen, display, notify, etc. :contentReference[oaicite:17]{index=17}
+
+start task "Events.HRI.Greeter"
+  when human appears:
+    say "Hello, welcome."
+    ask "Would you like tea or coffee?" as drink
+    if drink == "tea":
+      say "Preparing tea."
+    elseif drink == "coffee":
+      say "Preparing coffee."
+    else:
+      say "Okay."
+end task
+
+
+// 9) MULTI‑ROBOT COORDINATION & SYNCHRONIZATION
+// ----------------------------------------------------------------------------
+// Use assign/dispatch/synchronize for multi‑agent event flows. :contentReference[oaicite:18]{index=18}
+
+start task "Events.MultiRobot.HandOff"
+  assign "BotA" as surveyor
+  assign "BotB" as carrier
+
+  parallel:
+    dispatch task "ScanRoom" to BotA
+    dispatch task "FetchObject" to BotB
+
+  synchronize at "Exit"
+  say "Handoff completed."
+end task
+
+
+// 10) SAFETY & COMPLIANCE EVENT PATTERNS
+// ----------------------------------------------------------------------------
+// Patterns such as waiting for safe conditions and structured aborts. :contentReference[oaicite:19]{index=19}
+
+start task "Events.Safety.ZoneClear"
+  wait for area "Workcell" to be clear within 10 s
+  on timeout:
+    say "Workcell not clear; pausing"
+    pause task
+end task
+
+start task "Events.Safety.EStopGuard"
+  on event "arm.estop":
+    say "Emergency stop; shutting down safely"
+    turn off "Light1"
+    abort
+end task
+
+
+// 11) DIAGNOSTICS, TELEMETRY WATCHERS & TESTING HOOKS
+// ----------------------------------------------------------------------------
+// Telemetry channels can be polled on intervals to raise synthetic events.
+// The arm manifest exposes ee_pose, ee_wrench, controller_state, etc. :contentReference[oaicite:20]{index=20}
+
+start task "Events.Diagnostics.TelemetryWatch"
+  every 5 s:
+    // Example pseudo checks; adapt to runtime’s telemetry API.
+    log "Sampling telemetry for diagnostics"
+end task
+
+start task "Events.Testing.PickPlates"
+  // Illustrates test‑like expectations per Language Reference. :contentReference[oaicite:21]{index=21}
+  simulate object "plate" on "Table"
+  run task "CleanPlates"
+  expect move Arm1 to "Table"
+  expect release with Gripper1 at "Sink"
+end task
+
+
+// 12) EVENT ROUTER — CENTRAL SUBSCRIPTIONS AND DISPATCH
+// ----------------------------------------------------------------------------
+// One place to start background monitors. Use 'detached run' for long‑running
+// subscriptions; 'await run' for one‑shot checks. Triggers per language. :contentReference[oaicite:22]{index=22} :contentReference[oaicite:23]{index=23}
+
+start task "Events.Router"
+  // Time schedules
+  detached run "Events.Time.DailyRoutine"
+  detached run "Events.Time.Intervals"
+  detached run "Events.Time.CountdownExample"
+
+  // Perception pipelines
+  detached run "Events.Perception.ObjectAppear"
+  detached run "Events.Perception.AreaClear"
+
+  // Module event listeners
+  detached run "Events.Arm.Core"
+
+  // Environment & IoT
+  detached run "Events.Env.Lights"
+  detached run "Events.Env.Climate"
+  detached run "Events.Env.Security"
+
+  // HRI
+  detached run "Events.HRI.Greeter"
+
+  // Multi‑robot and safety
+  detached run "Events.MultiRobot.HandOff"
+  detached run "Events.Safety.ZoneClear"
+  detached run "Events.Safety.EStopGuard"
+
+  // Diagnostics
+  detached run "Events.Diagnostics.TelemetryWatch"
+end task
+
+
+// APPENDIX: ACTION VERBS & VOCABULARY COVERAGE
+// ----------------------------------------------------------------------------
+// The extension’s configuration enumerates a wide set of built‑in verbs
+// (manipulation, mobility, perception, HRI, IoT, system, etc.) to cover
+// “human tasks” in natural phrasing; this file demonstrates their use in
+// event contexts. See the configuration’s builtinVerbs/entities/spatial
+// lists to extend further in your project. :contentReference[oaicite:24]{index=24}
+//
+// End of file

@@ -1,0 +1,800 @@
+{
+  "schemaVersion": "1.0",
+  "module": {
+    "id": "loop.arm.v1",
+    "name": "6-DoF Robotic Arm",
+    "version": "1.0.0",
+    "vendor": "Loop Robotics",
+    "description": "General-purpose 6-DoF manipulator with serial I/O, ROS bridge, and task-level verbs for motion and manipulation.",
+    "category": "manipulation",
+    "hardware": {
+      "model": "LRX-6D-550",
+      "serial": "ARM-0001",
+      "specs": {
+        "reach_mm": 550,
+        "payloadKg_max": 2.0,
+        "repeatability_mm": 0.2,
+        "jointCount": 6
+      }
+    },
+    "software": {
+      "runtime": "armd",
+      "version": "1.0.0",
+      "build": "2025-10-01"
+    },
+    "geometry": {
+      "frames": [
+        "base_link",
+        "shoulder_link",
+        "elbow_link",
+        "wrist_link",
+        "tool0",
+        "ee_link"
+      ],
+      "mount": "base",
+      "reachMeters": 0.55,
+      "payloadKg": 2.0
+    },
+    "lifecycle": {
+      "startup": "Home joints, clear faults, load kinematics, enable motors.",
+      "shutdown": "Disable motors, save state, park at Home.",
+      "healthCheck": "Ping controller, verify encoders, check temperatures and e-stop chain.",
+      "calibration": "Run joint offsets and tool0 TCP calibration with reference fixture."
+    },
+    "ui": {
+      "icon": "images/arm.svg",
+      "docs": "language-reference.md"
+    }
+  },
+  "interfaces": {
+    "ros": {
+      "topics": [
+        {
+          "name": "/arm/joint_states",
+          "type": "sensor_msgs/JointState",
+          "qos": "reliable"
+        },
+        {
+          "name": "/arm/ee_pose",
+          "type": "geometry_msgs/PoseStamped",
+          "qos": "reliable"
+        }
+      ],
+      "services": [
+        { "name": "/arm/clear_errors", "type": "std_srvs/Trigger" },
+        { "name": "/arm/set_speed_scaling", "type": "std_srvs/SetBool" }
+      ],
+      "actions": [
+        {
+          "name": "/arm/follow_joint_trajectory",
+          "type": "control_msgs/FollowJointTrajectory"
+        }
+      ],
+      "namespace": "/arm"
+    },
+    "rest": {
+      "baseUrl": "http://localhost:8080/api/arm",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/state",
+          "query": {
+            "detail": {
+              "name": "detail",
+              "type": "string",
+              "required": false,
+              "description": "one of: summary | full",
+              "enum": ["summary", "full"],
+              "default": "summary"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/move",
+          "body": {
+            "name": "moveRequest",
+            "type": "object",
+            "required": true,
+            "description": "Target pose and motion parameters."
+          }
+        }
+      ]
+    },
+    "grpc": {
+      "host": "localhost",
+      "port": 50051,
+      "protoPackage": "loop.arm.v1"
+    },
+    "serial": {
+      "port": "/dev/ttyUSB0",
+      "baud": 115200,
+      "protocol": "CustomBinaryV1"
+    },
+    "mqtt": {
+      "broker": "mqtt://localhost:1883",
+      "topics": ["arm/state", "arm/cmd"]
+    }
+  },
+  "capabilities": [
+    {
+      "id": "manipulation.move",
+      "title": "Move arm to pose or target",
+      "category": "manipulation",
+      "verbs": ["move", "approach", "align", "rotate", "tilt", "pan"],
+      "directives": ["use module", "template task", "start task"],
+      "synonyms": ["move to", "move arm", "align to"],
+      "signature": "move {arm} to {target}",
+      "parameters": [
+        {
+          "name": "arm",
+          "type": "string",
+          "required": false,
+          "description": "Arm resource (default: this module)."
+        },
+        {
+          "name": "target",
+          "type": "pose",
+          "description": "Goal pose in reference frame.",
+          "required": true
+        },
+        {
+          "name": "referenceFrame",
+          "type": "string",
+          "required": false,
+          "description": "Pose frame id (e.g., base_link, map)."
+        },
+        {
+          "name": "linearSpeed",
+          "type": "speed",
+          "unit": "m/s",
+          "minimum": 0,
+          "maximum": 1.0,
+          "default": 0.2
+        },
+        {
+          "name": "acceleration",
+          "type": "acceleration",
+          "unit": "m/s^2",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1.0
+        },
+        {
+          "name": "tolerance",
+          "type": "distance",
+          "unit": "mm",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 2
+        }
+      ],
+      "preconditions": [
+        "Arm is homed and enabled.",
+        "No active emergency stop."
+      ],
+      "effects": [
+        "End-effector reaches the specified target within tolerance.",
+        "Success/failure events emitted."
+      ],
+      "returns": {
+        "type": "object",
+        "schema": { "description": "Final pose, error metrics, and timing." },
+        "successEvent": "arm.motion.completed",
+        "failureEvent": "arm.motion.failed"
+      },
+      "qos": {
+        "latencyMs": 250,
+        "reliability": "reliable",
+        "deadlineMs": 10000
+      },
+      "resources": [{ "name": "arm", "kind": "arm", "access": "exclusive" }],
+      "concurrency": {
+        "strategy": "queue",
+        "maxParallel": 1,
+        "mutexGroup": "arm"
+      },
+      "safety": {
+        "hazards": ["Pinch points", "High torque near joints"],
+        "restrictions": ["Limit speed near humans"],
+        "emergencyStop": true,
+        "speedLimit": 0.2,
+        "forceLimit": 80,
+        "safeZones": ["within reachMeters"],
+        "requiresSupervision": false
+      },
+      "examples": [
+        {
+          "name": "Move to named pose",
+          "roop": "move Arm1 to pose \"TrayPickup\""
+        },
+        {
+          "name": "Align above object",
+          "roop": "align Arm1 to object \"mug\" relative to \"Table\""
+        }
+      ],
+      "x-impl": {
+        "rosAction": "/arm/follow_joint_trajectory",
+        "restEndpoint": "POST /move",
+        "serial": { "opcode": "0x10", "payload": "{pose}" }
+      }
+    },
+    {
+      "id": "manipulation.grasp",
+      "title": "Grasp and release with gripper",
+      "category": "manipulation",
+      "verbs": ["grasp", "release", "hold"],
+      "signature": "grasp with {gripper} at {pose}",
+      "parameters": [
+        {
+          "name": "gripper",
+          "type": "string",
+          "description": "Gripper resource name.",
+          "required": true
+        },
+        {
+          "name": "pose",
+          "type": "pose",
+          "required": false,
+          "description": "Optional grasp pose; omit to use current EE pose."
+        },
+        {
+          "name": "force",
+          "type": "number",
+          "unit": "N",
+          "minimum": 0,
+          "maximum": 80,
+          "default": 30
+        },
+        {
+          "name": "timeout",
+          "type": "duration",
+          "unit": "s",
+          "minimum": 0,
+          "default": 5
+        }
+      ],
+      "preconditions": ["Object reachable and visible or pose known."],
+      "effects": ["Object is secured or released."],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.grasp.success",
+        "failureEvent": "arm.grasp.failure"
+      },
+      "qos": { "latencyMs": 200, "reliability": "reliable" },
+      "resources": [
+        { "name": "arm", "kind": "arm", "access": "exclusive" },
+        { "name": "gripper", "kind": "gripper", "access": "exclusive" }
+      ],
+      "concurrency": {
+        "strategy": "queue",
+        "maxParallel": 1,
+        "mutexGroup": "arm"
+      },
+      "safety": {
+        "hazards": ["Crush injury risk"],
+        "emergencyStop": true,
+        "forceLimit": 80
+      },
+      "examples": [
+        { "name": "Basic grasp", "roop": "grasp with Gripper1" },
+        { "name": "Release", "roop": "release with Gripper1" }
+      ]
+    },
+    {
+      "id": "manipulation.pick_and_place",
+      "title": "Pick an item and place it at a destination",
+      "category": "manipulation",
+      "verbs": ["pick and place", "pick_and_place", "pick", "place"],
+      "signature": "pick {item} and place to {destination}",
+      "parameters": [
+        {
+          "name": "item",
+          "type": "object",
+          "description": "Selector or handle for the target object.",
+          "required": true
+        },
+        {
+          "name": "destination",
+          "type": "pose",
+          "required": true,
+          "description": "Pose to place the object."
+        },
+        {
+          "name": "approachHeight",
+          "type": "distance",
+          "unit": "cm",
+          "minimum": 0,
+          "default": 5
+        },
+        {
+          "name": "linearSpeed",
+          "type": "speed",
+          "unit": "m/s",
+          "minimum": 0,
+          "maximum": 1.0,
+          "default": 0.2
+        }
+      ],
+      "preconditions": ["Gripper available; object is reachable."],
+      "effects": ["Object placed at destination."],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.pickplace.success",
+        "failureEvent": "arm.pickplace.failure"
+      },
+      "qos": {
+        "latencyMs": 500,
+        "reliability": "reliable",
+        "deadlineMs": 30000
+      },
+      "resources": [
+        { "name": "arm", "kind": "arm", "access": "exclusive" },
+        { "name": "gripper", "kind": "gripper", "access": "exclusive" }
+      ],
+      "concurrency": {
+        "strategy": "queue",
+        "maxParallel": 1,
+        "mutexGroup": "arm"
+      },
+      "safety": { "emergencyStop": true, "speedLimit": 0.3 },
+      "examples": [
+        {
+          "name": "Cup to tray",
+          "roop": "pick object \"mug\" and place to pose \"Tray\""
+        }
+      ]
+    },
+    {
+      "id": "manipulation.push_pull_slide",
+      "title": "Push, pull, or slide an object",
+      "category": "manipulation",
+      "verbs": ["push", "pull", "slide"],
+      "signature": "{verb} object with end-effector",
+      "parameters": [
+        {
+          "name": "verb",
+          "type": "string",
+          "enum": ["push", "pull", "slide"],
+          "required": true
+        },
+        { "name": "target", "type": "object", "required": true },
+        {
+          "name": "distance",
+          "type": "distance",
+          "unit": "cm",
+          "minimum": 0,
+          "default": 5
+        }
+      ],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.manip.success",
+        "failureEvent": "arm.manip.failure"
+      },
+      "qos": { "latencyMs": 250, "reliability": "reliable" },
+      "resources": [{ "name": "arm", "kind": "arm", "access": "exclusive" }]
+    },
+    {
+      "id": "manipulation.open_close_press",
+      "title": "Operate doors, drawers, and buttons",
+      "category": "manipulation",
+      "verbs": ["open", "close", "open door", "close door", "press"],
+      "signature": "{verb} {target}",
+      "parameters": [
+        {
+          "name": "verb",
+          "type": "string",
+          "enum": ["open", "close", "open door", "close door", "press"],
+          "required": true
+        },
+        { "name": "target", "type": "object", "required": true },
+        {
+          "name": "force",
+          "type": "number",
+          "unit": "N",
+          "minimum": 0,
+          "maximum": 120,
+          "default": 20
+        }
+      ],
+      "preconditions": ["Handle accessible; clear path to swing/slide."],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.operate.success",
+        "failureEvent": "arm.operate.failure"
+      },
+      "resources": [
+        { "name": "arm", "kind": "arm", "access": "exclusive" },
+        { "name": "gripper", "kind": "gripper", "access": "exclusive" }
+      ]
+    },
+    {
+      "id": "manipulation.screwdriving",
+      "title": "Tighten or loosen fasteners with a tool",
+      "category": "manipulation",
+      "verbs": ["screw", "unscrew", "tighten", "loosen"],
+      "signature": "{verb} fastener at {target}",
+      "parameters": [
+        {
+          "name": "verb",
+          "type": "string",
+          "enum": ["screw", "unscrew", "tighten", "loosen"],
+          "required": true
+        },
+        { "name": "target", "type": "object", "required": true },
+        {
+          "name": "torque",
+          "type": "number",
+          "unit": "Nm",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0.8
+        }
+      ],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.screw.success",
+        "failureEvent": "arm.screw.failure"
+      },
+      "resources": [
+        { "name": "arm", "kind": "arm", "access": "exclusive" },
+        { "name": "gripper", "kind": "gripper", "access": "exclusive" }
+      ],
+      "safety": { "forceLimit": 100, "emergencyStop": true }
+    },
+    {
+      "id": "system.control",
+      "title": "Pause/Resume/Stop/Abort motion",
+      "category": "system",
+      "verbs": ["stop", "pause", "resume", "abort"],
+      "signature": "{verb} arm motion",
+      "parameters": [
+        {
+          "name": "verb",
+          "type": "string",
+          "enum": ["stop", "pause", "resume", "abort"],
+          "required": true
+        }
+      ],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.control.success",
+        "failureEvent": "arm.control.failure"
+      },
+      "qos": { "latencyMs": 50, "reliability": "reliable" },
+      "resources": [{ "name": "arm", "kind": "arm", "access": "exclusive" }]
+    },
+    {
+      "id": "system.calibration",
+      "title": "Calibrate, reset, restart, or shutdown",
+      "category": "system",
+      "verbs": ["calibrate", "reset", "restart", "shutdown"],
+      "signature": "{verb} arm",
+      "parameters": [
+        {
+          "name": "verb",
+          "type": "string",
+          "enum": ["calibrate", "reset", "restart", "shutdown"],
+          "required": true
+        }
+      ],
+      "returns": {
+        "type": "boolean",
+        "successEvent": "arm.system.success",
+        "failureEvent": "arm.system.failure"
+      },
+      "resources": [{ "name": "arm", "kind": "arm", "access": "exclusive" }],
+      "safety": { "emergencyStop": true }
+    }
+  ],
+  "events": [
+    {
+      "name": "arm.ready",
+      "description": "Arm is initialized and enabled.",
+      "severity": "info"
+    },
+    {
+      "name": "arm.motion.started",
+      "description": "A motion command began.",
+      "severity": "info"
+    },
+    {
+      "name": "arm.motion.completed",
+      "description": "Requested motion completed within tolerance.",
+      "severity": "notice"
+    },
+    {
+      "name": "arm.motion.failed",
+      "description": "Motion did not reach goal or aborted.",
+      "severity": "warning"
+    },
+    {
+      "name": "arm.contact.detected",
+      "description": "Unexpected contact detected.",
+      "severity": "warning"
+    },
+    {
+      "name": "arm.over_torque",
+      "description": "Joint torque exceeded limit.",
+      "severity": "warning"
+    },
+    {
+      "name": "arm.joint_limit",
+      "description": "A joint limit was reached.",
+      "severity": "warning"
+    },
+    {
+      "name": "arm.estop",
+      "description": "Emergency stop asserted.",
+      "severity": "critical"
+    },
+    {
+      "name": "arm.comm.lost",
+      "description": "Communication with controller lost.",
+      "severity": "error"
+    }
+  ],
+  "telemetry": [
+    {
+      "name": "ee_pose",
+      "type": "pose",
+      "rateHz": 30,
+      "description": "End-effector pose in base frame."
+    },
+    {
+      "name": "ee_wrench",
+      "type": "wrench",
+      "rateHz": 60,
+      "unit": "N",
+      "description": "End-effector force/torque estimate."
+    },
+    {
+      "name": "joint_positions",
+      "type": "scalar",
+      "rateHz": 100,
+      "description": "Vector of joint positions (rad)."
+    },
+    {
+      "name": "joint_velocities",
+      "type": "scalar",
+      "rateHz": 100,
+      "description": "Vector of joint velocities (rad/s)."
+    },
+    {
+      "name": "controller_state",
+      "type": "scalar",
+      "rateHz": 5,
+      "description": "State string: ready | moving | fault."
+    },
+    {
+      "name": "temperatures",
+      "type": "scalar",
+      "rateHz": 1,
+      "unit": "C",
+      "description": "Joint and driver temperatures."
+    }
+  ],
+  "errors": [
+    {
+      "code": 1001,
+      "name": "EStop",
+      "retryable": false,
+      "description": "Emergency stop is active.",
+      "suggestedRecovery": "Clear e-stop, re-enable motors."
+    },
+    {
+      "code": 1002,
+      "name": "CollisionDetected",
+      "retryable": false,
+      "description": "Unexpected contact detected.",
+      "suggestedRecovery": "Back off, inspect scene, retry with lower speed."
+    },
+    {
+      "code": 1003,
+      "name": "OutOfReach",
+      "retryable": false,
+      "description": "Target pose unreachable.",
+      "suggestedRecovery": "Choose closer pose or replan."
+    },
+    {
+      "code": 1004,
+      "name": "IKFailure",
+      "retryable": true,
+      "description": "Inverse kinematics failed.",
+      "suggestedRecovery": "Adjust approach height or orientation and retry."
+    },
+    {
+      "code": 1005,
+      "name": "SelfCollision",
+      "retryable": false,
+      "description": "Trajectory collides with arm.",
+      "suggestedRecovery": "Change path or move obstacles."
+    },
+    {
+      "code": 1006,
+      "name": "JointLimitExceeded",
+      "retryable": true,
+      "description": "Command exceeds joint limits.",
+      "suggestedRecovery": "Clamp target or re-seed planner."
+    },
+    {
+      "code": 1007,
+      "name": "OverTorque",
+      "retryable": true,
+      "description": "Measured torque over threshold.",
+      "suggestedRecovery": "Reduce force or change approach."
+    },
+    {
+      "code": 1008,
+      "name": "OverCurrent",
+      "retryable": false,
+      "description": "Drive current over threshold.",
+      "suggestedRecovery": "Power-cycle drive after cooling."
+    },
+    {
+      "code": 1009,
+      "name": "ControllerError",
+      "retryable": true,
+      "description": "Controller reported fault.",
+      "suggestedRecovery": "Clear fault and retry."
+    },
+    {
+      "code": 1010,
+      "name": "CommLost",
+      "retryable": true,
+      "description": "Controller communication lost.",
+      "suggestedRecovery": "Check cable/network and reconnect."
+    }
+  ],
+  "safety": {
+    "hazards": ["Pinch points", "High torque", "Rapid motion"],
+    "restrictions": [
+      "Do not exceed speedLimit near humans.",
+      "Obey safeZones and do not enter restricted areas."
+    ],
+    "emergencyStop": true,
+    "speedLimit": 0.2,
+    "forceLimit": 80,
+    "safeZones": ["workcell_zone"],
+    "requiresSupervision": false
+  },
+  "permissions": [
+    {
+      "name": "arm",
+      "reason": "Control joints and motion planner.",
+      "scope": "exclusive"
+    },
+    {
+      "name": "gripper",
+      "reason": "Open/close gripper during tasks.",
+      "scope": "exclusive"
+    },
+    {
+      "name": "network",
+      "reason": "ROS bridge, REST, and MQTT communication.",
+      "scope": "local"
+    }
+  ],
+  "dependencies": [
+    { "id": "loop.gripper.v2", "version": ">=2.0.0", "optional": false },
+    { "id": "loop.vision.v1", "version": ">=1.0.0", "optional": true }
+  ],
+  "profiles": [
+    {
+      "name": "home",
+      "defaults": {
+        "linearSpeed": {
+          "name": "linearSpeed",
+          "type": "speed",
+          "unit": "m/s",
+          "default": 0.15,
+          "minimum": 0,
+          "maximum": 0.4
+        },
+        "tolerance": {
+          "name": "tolerance",
+          "type": "distance",
+          "unit": "mm",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10
+        }
+      },
+      "limits": {
+        "speedLimit": {
+          "name": "speedLimit",
+          "type": "speed",
+          "unit": "m/s",
+          "maximum": 0.25
+        }
+      }
+    },
+    {
+      "name": "factory",
+      "defaults": {
+        "linearSpeed": {
+          "name": "linearSpeed",
+          "type": "speed",
+          "unit": "m/s",
+          "default": 0.4,
+          "minimum": 0,
+          "maximum": 1.0
+        },
+        "tolerance": {
+          "name": "tolerance",
+          "type": "distance",
+          "unit": "mm",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 5
+        }
+      },
+      "limits": {
+        "speedLimit": {
+          "name": "speedLimit",
+          "type": "speed",
+          "unit": "m/s",
+          "maximum": 0.6
+        }
+      }
+    },
+    {
+      "name": "demo",
+      "defaults": {
+        "linearSpeed": {
+          "name": "linearSpeed",
+          "type": "speed",
+          "unit": "m/s",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 0.3
+        },
+        "tolerance": {
+          "name": "tolerance",
+          "type": "distance",
+          "unit": "mm",
+          "default": 5,
+          "minimum": 0,
+          "maximum": 10
+        }
+      },
+      "limits": {
+        "speedLimit": {
+          "name": "speedLimit",
+          "type": "speed",
+          "unit": "m/s",
+          "maximum": 0.2
+        }
+      }
+    }
+  ],
+  "testing": {
+    "smoke": "Move to Home, then to TrayPickup, grasp and release.",
+    "simulations": [
+      "IK failure at extreme reach",
+      "Self-collision avoidance around elbow",
+      "Door handle operation sequence"
+    ],
+    "fixtures": [
+      "fixtures/poses/home.json",
+      "fixtures/poses/tray_pickup.json",
+      "fixtures/objects/mug_blue.label.json"
+    ]
+  },
+  "examples": [
+    {
+      "name": "Pick cup and place on tray",
+      "roop": "pick object \"mug\" and place to pose \"Tray\"\n"
+    },
+    {
+      "name": "Open a door",
+      "roop": "open door object \"DoorHandle\""
+    },
+    {
+      "name": "Pause and resume motion",
+      "roop": "pause\nresume"
+    }
+  ],
+  "x-notes": "This manifest expresses arm-level abilities and constraints. Tool-specific extensions (e.g., specialized grippers or screwdrivers) can add verbs via their own .roopmodule files and will interoperate through shared resources."
+}

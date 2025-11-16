@@ -1,0 +1,813 @@
+{
+  "name": "roop-language-support",
+  "displayName": "ROOP Language Support",
+  "description": "Language tooling for ROOP (Robot-Oriented Operational Programming): TextMate grammar, snippets, LSP client/server (completion, hover, diagnostics, symbols, folding, formatting, quick fixes), JSON schemas, views, commands, tasks, and walkthroughs.",
+  "publisher": "jichao-zhang",
+  "version": "0.4.2",
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SolarSolomonZhang/roop-language-support.git"
+  },
+  "homepage": "https://github.com/SolarSolomonZhang/roop-language-support/tree/main/packages/roop-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/SolarSolomonZhang/roop-language-support.git"
+  },
+  "author": {
+    "name": "Jichao Zhang"
+  },
+  "contributors": [
+    {
+      "name": "Jichao Zhang"
+    }
+  ],
+  "qna": "marketplace",
+  "galleryBanner": {
+    "color": "#0b1f2a",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "robotics",
+    "automation",
+    "dsl",
+    "roop",
+    "lsp",
+    "language-server",
+    "syntax-highlighting",
+    "json-schema",
+    "snippets",
+    "tasks",
+    "walkthroughs"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": false
+    }
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "extensionDependencies": [
+    "redhat.vscode-yaml"
+  ],
+  "activationEvents": [
+    "onLanguage:roop",
+    "workspaceContains:**/*.roop",
+    "workspaceContains:**/*.roopmodule.json",
+    "onCommand:roop.insertTask",
+    "onCommand:roop.newProject",
+    "onCommand:roop.openDocs",
+    "onCommand:roop.runTask",
+    "onCommand:roop.validateDocument",
+    "onCommand:roop.scanModules",
+    "onCommand:roop.generateModuleManifest",
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "roop",
+        "aliases": [
+          "ROOP",
+          "roop"
+        ],
+        "extensions": [
+          ".roop"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "roop",
+        "scopeName": "source.roop",
+        "path": "./syntaxes/roop.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "roop",
+        "path": "./snippets/roop.code-snippets"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "*.roopmodule.json"
+        ],
+        "url": "./schemas/roopmodule.schema.json"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "roop.insertTask",
+          "group": "navigation@9",
+          "when": "editorLangId == roop"
+        },
+        {
+          "command": "roop.validateDocument",
+          "group": "navigation@10",
+          "when": "editorLangId == roop"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "roop.runTask",
+          "when": "editorLangId == roop"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "roop.scanModules",
+          "when": "resourceExtname == .roop || resourceExtname == .roopmodule.json"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "roop.newProject",
+          "when": "true"
+        },
+        {
+          "command": "roop.openDocs",
+          "when": "true"
+        },
+        {
+          "command": "roop.generateModuleManifest",
+          "when": "true"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "roop.insertTask",
+        "title": "ROOP: Insert Task Block"
+      },
+      {
+        "command": "roop.newProject",
+        "title": "ROOP: Create Example Project"
+      },
+      {
+        "command": "roop.openDocs",
+        "title": "ROOP: Open Language Reference"
+      },
+      {
+        "command": "roop.runTask",
+        "title": "ROOP: Run Current Task"
+      },
+      {
+        "command": "roop.validateDocument",
+        "title": "ROOP: Validate Current Document"
+      },
+      {
+        "command": "roop.scanModules",
+        "title": "ROOP: Scan and Register Modules"
+      },
+      {
+        "command": "roop.generateModuleManifest",
+        "title": "ROOP: Generate .roopmodule.json"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "roop.insertTask",
+        "key": "ctrl+i",
+        "mac": "cmd+i",
+        "when": "editorLangId == roop"
+      },
+      {
+        "command": "roop.openDocs",
+        "key": "ctrl+shift+h",
+        "mac": "cmd+shift+h",
+        "when": "editorLangId == roop"
+      },
+      {
+        "command": "roop.validateDocument",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "editorLangId == roop"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "roop",
+          "title": "ROOP",
+          "icon": "images/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "roop": [
+        {
+          "id": "roop.modules",
+          "name": "Modules"
+        },
+        {
+          "id": "roop.tasks",
+          "name": "Tasks"
+        },
+        {
+          "id": "roop.world",
+          "name": "World Model"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "roop.modules",
+        "contents": "No modules detected.\n[Create an example project](command:roop.newProject)\n[Open the language reference](command:roop.openDocs)",
+        "when": "!roop.hasModules"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "roop",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "One of: compile | validate | format | run"
+          },
+          "args": {
+            "type": "array",
+            "description": "Arguments to pass to the ROOP language server/CLI"
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "$roop-lsp",
+        "owner": "roop",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": [
+          {
+            "regexp": "^(.+):(\\d+):(\\d+) - (warning|error) (.+)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+          }
+        ]
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "roop.gettingStarted",
+        "title": "Getting Started with ROOP",
+        "description": "Author, validate, and run your first ROOP tasks.",
+        "steps": [
+          {
+            "id": "roop.openDocsStep",
+            "title": "Read the ROOP Language Reference",
+            "description": "Open the reference to learn syntax, triggers, actions, and patterns.",
+            "media": {
+              "markdown": "language-reference.md"
+            },
+            "completionEvents": [
+              "onCommand:roop.openDocs"
+            ]
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "ROOP",
+      "properties": {
+        "roop.format.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the built-in ROOP formatter (indentation and block headers)."
+        },
+        "roop.format.indentSize": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 2,
+          "maximum": 8,
+          "description": "Number of spaces for indentation."
+        },
+        "roop.lint.missingColon.severity": {
+          "type": "string",
+          "enum": [
+            "hint",
+            "warning",
+            "error",
+            "off"
+          ],
+          "default": "hint",
+          "description": "Severity for missing ':' on block headers (when/on/if/else/elseif/repeat/while/for/parallel)."
+        },
+        "roop.lint.unbalancedTask.severity": {
+          "type": "string",
+          "enum": [
+            "hint",
+            "warning",
+            "error",
+            "off"
+          ],
+          "default": "warning",
+          "description": "Severity for unbalanced 'start task' and 'end task'."
+        },
+        "roop.completion.extraKeywords": {
+          "type": "array",
+          "default": [],
+          "description": "Additional custom keywords to show in completion suggestions."
+        },
+        "roop.server.trace": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Language Server Protocol trace level."
+        },
+        "roop.server.extraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments passed to the ROOP language server."
+        },
+        "roop.validation.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable static validation for ROOP documents."
+        },
+        "roop.validation.maxProblems": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 1,
+          "description": "Maximum number of problems reported in a single file."
+        },
+        "roop.snippets.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable ROOP snippets."
+        },
+        "roop.language.triggers": {
+          "type": "array",
+          "default": [
+            "when",
+            "on",
+            "at",
+            "every",
+            "with timeout",
+            "wait",
+            "delay",
+            "countdown",
+            "until",
+            "expect",
+            "ask",
+            "wait for",
+            "await",
+            "detached"
+          ],
+          "description": "Trigger and timing keywords used to start or modify actions."
+        },
+        "roop.language.controlFlow": {
+          "type": "array",
+          "default": [
+            "if",
+            "elseif",
+            "else",
+            "repeat",
+            "while",
+            "for",
+            "parallel",
+            "break",
+            "continue",
+            "exit",
+            "abort",
+            "retry",
+            "fallback",
+            "max retries",
+            "run",
+            "await run",
+            "detached run",
+            "call",
+            "template task",
+            "start task",
+            "end task",
+            "use module",
+            "synchronize",
+            "sync when",
+            "context"
+          ],
+          "description": "Structural and control flow keywords."
+        },
+        "roop.language.entities": {
+          "type": "array",
+          "default": [
+            "object",
+            "objects",
+            "human",
+            "user",
+            "pet",
+            "robot",
+            "module",
+            "task",
+            "door",
+            "cup",
+            "mug",
+            "bottle",
+            "plate",
+            "tray",
+            "sofa",
+            "table",
+            "desk",
+            "shelf",
+            "bin",
+            "lamp",
+            "light",
+            "camera",
+            "gripper",
+            "arm",
+            "base",
+            "speaker",
+            "screen",
+            "oven",
+            "microwave",
+            "elevator",
+            "stairs",
+            "label",
+            "color",
+            "material",
+            "state",
+            "owner",
+            "size",
+            "confidence",
+            "confidently"
+          ],
+          "description": "Entity and semantic noun vocabulary."
+        },
+        "roop.language.spatial": {
+          "type": "array",
+          "default": [
+            "position",
+            "pose",
+            "reference",
+            "offset",
+            "landmark",
+            "world",
+            "room",
+            "floor",
+            "hallway",
+            "zone",
+            "area",
+            "surface",
+            "anchor",
+            "frame",
+            "path",
+            "height",
+            "width",
+            "distance",
+            "angle",
+            "speed",
+            "acceleration",
+            "relative to",
+            "anchor on",
+            "near",
+            "over",
+            "under",
+            "in",
+            "on",
+            "into",
+            "onto",
+            "across",
+            "through",
+            "around",
+            "between",
+            "within",
+            "to",
+            "from",
+            "at"
+          ],
+          "description": "Spatial terms and prepositions recognized by the language."
+        },
+        "roop.language.operators.logical": {
+          "type": "array",
+          "default": [
+            "and",
+            "or",
+            "not"
+          ],
+          "description": "Logical operators."
+        },
+        "roop.language.operators.comparison": {
+          "type": "array",
+          "default": [
+            "==",
+            "!=",
+            "<=",
+            ">=",
+            "<",
+            ">"
+          ],
+          "description": "Comparison operators."
+        },
+        "roop.language.operators.membership": {
+          "type": "array",
+          "default": [
+            "in",
+            "contains"
+          ],
+          "description": "Membership operators."
+        },
+        "roop.language.operators.relational": {
+          "type": "array",
+          "default": [
+            "is",
+            "near",
+            "before",
+            "after",
+            "between",
+            "within",
+            "as",
+            "to",
+            "from",
+            "by",
+            "with",
+            "over",
+            "under",
+            "around",
+            "across",
+            "through",
+            "onto",
+            "into",
+            "relative to",
+            "anchor on"
+          ],
+          "description": "Relational and spatial operators."
+        },
+        "roop.language.builtinVerbs": {
+          "type": "array",
+          "default": [
+            "grasp",
+            "release",
+            "place",
+            "pick",
+            "pick up",
+            "put",
+            "drop",
+            "push",
+            "pull",
+            "slide",
+            "lift",
+            "lower",
+            "carry",
+            "insert",
+            "remove",
+            "pour",
+            "scoop",
+            "stir",
+            "cut",
+            "slice",
+            "chop",
+            "peel",
+            "crack",
+            "mix",
+            "fold",
+            "knead",
+            "spread",
+            "wipe",
+            "scrub",
+            "brush",
+            "sweep",
+            "vacuum",
+            "mop",
+            "squeegee",
+            "open",
+            "close",
+            "twist",
+            "screw",
+            "unscrew",
+            "tighten",
+            "loosen",
+            "connect",
+            "disconnect",
+            "plug",
+            "unplug",
+            "attach",
+            "detach",
+            "lock",
+            "unlock",
+            "latch",
+            "unlatch",
+            "press",
+            "tap",
+            "hold",
+            "point",
+            "handover",
+            "receive",
+            "present",
+            "scan",
+            "weigh",
+            "measure",
+            "move",
+            "navigate",
+            "go",
+            "approach",
+            "retreat",
+            "follow",
+            "lead",
+            "dock",
+            "undock",
+            "rotate",
+            "tilt",
+            "pan",
+            "look",
+            "track",
+            "observe",
+            "scan area",
+            "map",
+            "localize",
+            "explore",
+            "avoid",
+            "stop",
+            "pause",
+            "resume",
+            "align",
+            "climb",
+            "descend",
+            "traverse",
+            "cross",
+            "dock to",
+            "charge",
+            "detect",
+            "recognize",
+            "classify",
+            "segment",
+            "locate",
+            "estimate",
+            "read",
+            "ocr",
+            "barcode",
+            "qr",
+            "monitor",
+            "count",
+            "reidentify",
+            "measure temperature",
+            "measure humidity",
+            "measure air quality",
+            "detect human",
+            "detect face",
+            "detect gesture",
+            "estimate emotion",
+            "track object",
+            "say",
+            "display",
+            "notify",
+            "log",
+            "ask",
+            "confirm",
+            "translate",
+            "transcribe",
+            "play",
+            "record",
+            "stream",
+            "call",
+            "message",
+            "show",
+            "listen",
+            "turn on",
+            "turn off",
+            "toggle",
+            "set",
+            "adjust",
+            "increase",
+            "decrease",
+            "dim",
+            "brighten",
+            "heat",
+            "cool",
+            "fan on",
+            "fan off",
+            "open door",
+            "close door",
+            "open window",
+            "close window",
+            "open blinds",
+            "close blinds",
+            "open curtains",
+            "close curtains",
+            "brew",
+            "cook",
+            "bake",
+            "boil",
+            "water plants",
+            "feed pet",
+            "refill",
+            "dispense",
+            "sanitize",
+            "sterilize",
+            "disinfect",
+            "measure heart rate",
+            "measure spo2",
+            "measure blood pressure",
+            "measure respiration",
+            "patrol",
+            "guard",
+            "alarm",
+            "alert",
+            "stream video",
+            "lock door",
+            "unlock door",
+            "assign",
+            "dispatch",
+            "synchronize",
+            "broadcast",
+            "negotiate",
+            "yield",
+            "request",
+            "share map",
+            "use module",
+            "configure",
+            "calibrate",
+            "reset",
+            "restart",
+            "shutdown",
+            "sleep",
+            "wake",
+            "ping",
+            "diagnose",
+            "update firmware",
+            "plan",
+            "navigate to"
+          ],
+          "description": "Built-in ROOP verbs and common device/IoT actions for human tasks. Modules may provide more verbs."
+        }
+      },
+      "order": 1
+    },
+    "configurationDefaults": {
+      "[roop]": {
+        "editor.wordSeparators": "`~!@#$%^&*()-=+[{}]\\|;:'\",.<>/?",
+        "editor.formatOnSave": true,
+        "editor.semanticHighlighting.enabled": true
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier --write .",
+    "clean": "rimraf out",
+    "package": "vsce package",
+    "pretest": "npm run compile",
+    "test": "node scripts/smoke-test.js",
+    "check": "npm run lint && npm run format -- --check",
+    "prepare": "npm run compile",
+    "prepack": "npm run clean && npm ci && npm run compile"
+  },
+  "files": [
+    "out/**/*",
+    "syntaxes/**/*.json",
+    "snippets/**/*.code-snippets",
+    "schemas/**/*.json",
+    "images/**/*",
+    "language-configuration.json",
+    "language-reference.md",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.11.10",
+    "@types/vscode": "^1.84.0",
+    "@vscode/test-electron": "latest",
+    "@vscode/vsce": "latest",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.0",
+    "vscode-languageserver-textdocument": "^1.0.8"
+  }
+}

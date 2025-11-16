@@ -1,0 +1,453 @@
+// ====================================================================
+// basic.roop  —  Comprehensive examples and templates for ROOP
+// ====================================================================
+// Table of Contents
+// 0. Conventions and pragmas
+// 1. Constants and shared variables
+// 2. Template task library (reusable building blocks)
+//    2.1 Motion            — MoveTo, AlignAbove
+//    2.2 Manipulation      — PickAndPlace, GraspObject, PlaceOn, OpenClosePress
+//    2.3 Kitchen toolkit   — PourLiquid, StirBowl, CleanSurface
+//    2.4 Human interaction — SpeakAndDisplay, HandoverToHuman
+//    2.5 IoT & environment — ToggleDevice, SetTemperature, HygieneRoutine
+//    2.6 Industrial ops    — AlignAndFasten, PalletizeItem
+//    2.7 System & safety   — RecordAndReport, SafePauseResume, MonitorEnvironment
+//    2.8 Healthcare demo   — MeasureVitals
+// 3. Utility tasks (diagnostics, safety stop, context)
+// 4. Domain tasks
+//    4.1 Motion & Navigation
+//    4.2 Manipulation & Tool Use
+//    4.3 Vision & Perception
+//    4.4 Speech, Audio & Display
+//    4.5 Smart-Home & IoT
+//    4.6 Healthcare & Assistive
+//    4.7 Hospitality & Retail
+//    4.8 Industrial & Warehouse
+//    4.9 Household & Domestic
+//    4.10 Education & Research
+//    4.11 Safety & Compliance
+//    4.12 Multi-Robot Coordination
+// 5. Schedules & Reactive flows
+// 6. End-to-end Orchestrator
+// 7. Testing examples (smoke-style)
+// ====================================================================
+
+
+// 0. Conventions and pragmas -------------------------------------------------
+
+pragma optimize on
+pragma tracing off
+// Block headers end with a colon; close tasks explicitly with `end task`.
+
+// 1. Constants and shared variables -----------------------------------------
+
+let SAFE_SPEED = 0.10
+let NORMAL_SPEED = 0.20
+let FAST_SPEED = 0.40
+
+let HomePose = pose "Home"
+let TrayPose = pose "Tray"
+let SinkPose = pose "Sink"
+let PalletPose = pose "Pallet"
+
+let RedMug = object "mug" with color "red"
+let BlueBottle = object "bottle" with color "blue"
+
+// 2. Template task library ---------------------------------------------------
+
+// 2.1 Motion ---------------------------------------------------------------
+
+template task "MoveTo"(actor, target):
+  move actor to target
+
+template task "AlignAbove"(actor, target):
+  align actor to target
+  approach actor to target
+
+// 2.2 Manipulation ----------------------------------------------------------
+
+template task "PickAndPlace"(item, destination):
+  use module "Arm1"
+  use module "Gripper1"
+  move Arm1 to item
+  grasp with Gripper1
+  on failure:
+    say "Initial grasp failed. Retrying."
+    retry after 2 seconds
+    on failure:
+      fallback:
+        say "Switching to a slower approach."
+        set "Arm1" speed SAFE_SPEED
+        move Arm1 to item
+        grasp with Gripper1
+  move Arm1 to destination
+  release with Gripper1
+
+template task "GraspObject"(selector):
+  use module "Arm1"
+  use module "Gripper1"
+  move Arm1 to selector
+  grasp with Gripper1
+
+template task "PlaceOn"(selector, surfaceName):
+  use module "Arm1"
+  use module "Gripper1"
+  move Arm1 to surfaceName
+  place selector on surfaceName
+  release with Gripper1
+
+template task "OpenClosePress"(target, verb):
+  if verb == "open" or verb == "open door":
+    open target
+  elseif verb == "close" or verb == "close door":
+    close target
+  elseif verb == "press":
+    press target
+  else:
+    say "Unsupported verb for OpenClosePress"
+
+// 2.3 Kitchen toolkit -------------------------------------------------------
+
+template task "PourLiquid"(source, destination):
+  use module "Arm1"
+  move Arm1 to source
+  grasp with Gripper1
+  move Arm1 to destination
+  pour from source to destination
+  release with Gripper1
+
+template task "StirBowl"(bowl, tool):
+  use module "Arm1"
+  grasp with Gripper1
+  move Arm1 to bowl
+  stir bowl with tool
+
+template task "CleanSurface"(surfaceName):
+  use module "Arm1"
+  wipe surface surfaceName
+  detect object "stain" on surfaceName
+  on success:
+    wipe surface surfaceName
+  say "Cleaning completed for {surfaceName}."
+
+// 2.4 Human interaction -----------------------------------------------------
+
+template task "SpeakAndDisplay"(message, panel):
+  say message
+  display message on panel
+
+template task "HandoverToHuman"(person, itemSelector):
+  use module "Arm1"
+  use module "Gripper1"
+  move Arm1 to itemSelector
+  grasp with Gripper1
+  move Arm1 to person
+  handover itemSelector to person
+  release with Gripper1
+
+// 2.5 IoT & environment -----------------------------------------------------
+
+template task "ToggleDevice"(deviceName, state):
+  if state == "on":
+    turn on deviceName
+  elseif state == "off":
+    turn off deviceName
+  else:
+    toggle deviceName
+
+template task "SetTemperature"(thermostat, value):
+  set thermostat to value
+
+template task "HygieneRoutine"():
+  sanitize "Handles"
+  disinfect "Countertop"
+  sterilize "Utensils"
+
+// 2.6 Industrial ops --------------------------------------------------------
+
+template task "AlignAndFasten"(part, fixture, torqueNm):
+  use module "Arm1"
+  align part with fixture
+  tighten part at torqueNm
+
+template task "PalletizeItem"(selector, palletPose):
+  call "PickAndPlace"(selector, palletPose)
+
+// 2.7 System & safety -------------------------------------------------------
+
+template task "RecordAndReport"(msg):
+  log msg
+  record msg
+  notify user msg
+
+template task "SafePauseResume"():
+  pause
+  say "Paused. Resuming now."
+  resume
+
+template task "MonitorEnvironment"():
+  // Designed to run as a detached background monitor.
+  parallel:
+    every 30 seconds:
+      scan area "Entrance"
+    every 60 seconds:
+      detect object "spill" in area "Floor"
+      on success:
+        notify user "Spill detected on Floor."
+    every 5 minutes:
+      measure air quality in area "LivingRoom"
+      on failure:
+        log "Air quality read failed."
+
+// 2.8 Healthcare demo -------------------------------------------------------
+
+template task "MeasureVitals"(person):
+  measure heart rate for person
+  measure spo2 for person
+  measure blood pressure for person
+  measure respiration for person
+  say "Vitals measured."
+
+// 3. Utility tasks -----------------------------------------------------------
+
+start task "Diagnostics":
+  use module "Speaker"
+  say "Diagnostics started."
+  let now = currentTime
+  log "Current time is {now}."
+  say "Diagnostics completed."
+end task
+
+start task "SafetyStop":
+  say "Emergency stop requested."
+  abort
+end task
+
+start task "ContextExample":
+  context "WelcomeFlow":
+    ask "May I take your coat?" as coatOffer
+    if coatOffer == "yes":
+      say "I will store your coat."
+    else:
+      say "Okay, keeping it with you."
+end task
+
+
+// 4. Domain tasks ------------------------------------------------------------
+
+// 4.1 Motion & Navigation
+start task "NavigateRoutine":
+  use module "Base"
+  navigate to "ChargingDock"
+  dock
+  undock
+  follow object "human"
+  avoid area "NoGoZone"
+  stop
+end task
+
+// 4.2 Manipulation & Tool Use
+start task "KitchenPickPlace":
+  use module "Arm1"
+  use module "Gripper1"
+  call "PickAndPlace"(object "mug", TrayPose)
+  call "PickAndPlace"(object "plate", pose "DishRack")
+end task
+
+start task "OperateFixtures":
+  call "OpenClosePress"(object "DoorHandle", "open")
+  call "OpenClosePress"(object "DoorHandle", "close")
+  call "OpenClosePress"(object "CooktopButton", "press")
+end task
+
+start task "AssemblyTighten":
+  call "AlignAndFasten"(object "BoltA", object "FixtureA", 0.8)
+end task
+
+// 4.3 Vision & Perception
+start task "InspectCounter":
+  use module "Camera1"
+  let items = detect all object "bottle" on "Countertop"
+  say "Found {items.length} bottles on the counter."
+  detect object "kettle" on "Stove"
+  observe area "Sink"
+  track object "person"
+end task
+
+// 4.4 Speech, Audio & Display
+start task "FrontDesk":
+  use module "Speaker"
+  use module "Display1"
+  call "SpeakAndDisplay"("Welcome", "Display1")
+  ask "Do you need assistance?" as needHelp
+  if needHelp == "yes":
+    say "I will get someone to help."
+  else:
+    say "Okay, enjoy your visit."
+end task
+
+// 4.5 Smart-Home & IoT
+start task "SmartHomeMorning":
+  use module "Light1"
+  use module "Thermostat"
+  at time "07:00":
+    turn on "Light1"
+    set "Thermostat" to 22
+end task
+
+// 4.6 Healthcare & Assistive
+start task "MedicationReminder":
+  say "Time for medication."
+  let bottle = object "medicine bottle"
+  if bottle exists in area "Table":
+    call "PickAndPlace"(bottle, pose "Bedside")
+  else:
+    notify user "Medicine not found on the table."
+end task
+
+start task "VitalsCheck":
+  call "MeasureVitals"(object "patient")
+end task
+
+// 4.7 Hospitality & Retail
+start task "ServeTable3":
+  call "SpeakAndDisplay"("Serving tea at Table 3.", "Panel1")
+  call "PickAndPlace"(object "mug" with label "tea", "Table 3")
+  say "Order served at Table 3."
+end task
+
+// 4.8 Industrial & Warehouse
+start task "LinePickAndPalletize":
+  use module "Arm1"
+  use module "Gripper1"
+  let boxes = detect all object "box" on "ConveyorA"
+  for box in boxes:
+    call "PalletizeItem"(box, PalletPose)
+  scan area "Pallet"
+  say "Palletization complete."
+end task
+
+// 4.9 Household & Domestic
+start task "CleanCountertop":
+  call "CleanSurface"("Countertop")
+end task
+
+start task "LaundryCycle":
+  open "Washer"
+  insert "Clothes" into "Washer"
+  press "Start"
+  say "Laundry cycle started."
+end task
+
+// 4.10 Education & Research
+start task "DemonstrateGrasp":
+  say "Demonstrating grasp."
+  call "GraspObject"(object "demo cube")
+  release with Gripper1
+end task
+
+start task "RandomizedTrial":
+  let trials = 3
+  repeat trials times:
+    let angle = 5
+    move Arm1 to pose "Fixture" // simple placeholder
+    say "Trial executed."
+end task
+
+// 4.11 Safety & Compliance
+start task "WorkcellSafety":
+  wait for area "Workcell" to be clear
+  set "Arm1" speed SAFE_SPEED
+  say "Workcell is clear. Proceeding in slow mode."
+end task
+
+start task "EmergencyDrill":
+  say "Running emergency drill."
+  abort
+end task
+
+// 4.12 Multi-Robot Coordination
+start task "TwoBotDelivery":
+  assign "BotA" as surveyor
+  assign "BotB" as carrier
+  parallel:
+    dispatch task "ScanRoom" to BotA
+    dispatch task "FetchItem" to BotB
+  synchronize at "Exit"
+  say "Two-robot delivery completed."
+end task
+
+
+// 5. Schedules & Reactive flows ---------------------------------------------
+
+start task "ReactiveKitchen":
+  use module "Arm1"
+  use module "Gripper1"
+
+  at time "08:00":
+    say "Good morning"
+    move Arm1 to "Kettle"
+
+  when object "mug" with color "red" appears on "Table":
+    move Arm1 to RedMug
+    grasp with Gripper1
+    move Arm1 to TrayPose
+    release with Gripper1
+    on success:
+      say "Red mug delivered."
+
+  when object "door" opens:
+    say "Door opened."
+
+  on failure:
+    say "A step failed in ReactiveKitchen."
+    retry after 3 seconds
+    on failure:
+      fallback:
+        say "Switching to alternative routine."
+        run "KitchenPickPlace"
+end task
+
+
+// 6. End-to-end Orchestrator -------------------------------------------------
+
+start task "MasterDemo":
+  use module "Camera1"
+  use module "Arm1"
+  use module "Gripper1"
+  use module "Speaker"
+  use module "Light1"
+
+  parallel:
+    run "SmartHomeMorning"
+    detached run "MonitorEnvironment"
+
+  await run "NavigateRoutine"
+  await run "InspectCounter"
+
+  if surface "Countertop" is clear:
+    await run "KitchenPickPlace"
+  else:
+    say "Countertop not clear; delaying pick and place."
+    retry after 60 seconds
+
+  await run "ServeTable3"
+
+  run "GraspObject"(object "spoon") with exclusive access to "Arm1"
+
+  say "Master demo finished."
+end task
+
+
+// 7. Testing examples (smoke-style) -----------------------------------------
+
+start task "SmokeTest_PickPlates":
+  let plates = detect all object "plate" on "Table"
+  for plate in plates:
+    move Arm1 to plate
+    grasp with Gripper1
+    move Arm1 to SinkPose
+    release with Gripper1
+  say "Smoke test completed."
+end task
+

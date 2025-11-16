@@ -1,0 +1,20 @@
+# Node dependencies
+node_modules/
+
+# Local Node runtime and archives
+node-v*/
+node-v*.tar.gz
+
+# Build outputs
+out/
+dist/
+
+# VSIX packages
+*.vsix
+
+# Editor settings
+.vscode/
+
+# OS junk
+.DS_Store
+node_modules

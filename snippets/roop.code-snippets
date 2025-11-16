@@ -1,0 +1,472 @@
+{
+  "Task: Definition block": {
+    "prefix": ["task", "task.def"],
+    "body": ["start task \"${1:TaskName}\"", "  ${2:// actions}", "end task"],
+    "description": "Create a task block.",
+  },
+  "Task: Definition with modules": {
+    "prefix": "task.modules",
+    "body": [
+      "start task \"${1:TaskName}\"",
+      "  // required modules",
+      "  use module \"${2:Camera1}\"",
+      "  use module \"${3:Arm1}\"",
+      "  use module \"${4:Gripper1}\"",
+      "",
+      "  ${5:// actions}",
+      "end task",
+    ],
+    "description": "Task block that declares commonly used modules.",
+  },
+  "Lifecycle: start task command": {
+    "prefix": ["start.task.cmd", "task.start"],
+    "body": ["start task \"${1:TaskName}\""],
+    "description": "Start a task at runtime (lifecycle control).",
+  },
+  "Lifecycle: pause task": {
+    "prefix": "pause.task",
+    "body": ["pause task \"${1:TaskName}\""],
+    "description": "Pause a running task and preserve state.",
+  },
+  "Lifecycle: resume task": {
+    "prefix": "resume.task",
+    "body": ["resume task \"${1:TaskName}\""],
+    "description": "Resume a paused task.",
+  },
+  "Lifecycle: stop task": {
+    "prefix": "stop.task",
+    "body": ["stop task \"${1:TaskName}\""],
+    "description": "Stop a running task and release resources.",
+  },
+  "Lifecycle: pause all except one": {
+    "prefix": "pause.except",
+    "body": ["pause all tasks except \"${1:TaskName}\""],
+    "description": "Pause all tasks except the named one.",
+  },
+  "Lifecycle: start task with priority": {
+    "prefix": "task.priority",
+    "body": [
+      "start task \"${1:TaskName}\" with priority ${2|critical,high,normal,low|}",
+    ],
+    "description": "Start a task with a priority hint.",
+  },
+  "Modules: use module": {
+    "prefix": ["use.module", "module.use"],
+    "body": ["use module \"${1:ModuleName}\""],
+    "description": "Declare a module required by this task.",
+  },
+  "Modules: load module from file": {
+    "prefix": "load.module",
+    "body": ["load module from \"${1:modules/Gripper1.roopmodule}\""],
+    "description": "Dynamically load a module capability file.",
+  },
+  "Modules: scan for module by ability": {
+    "prefix": "scan.module",
+    "body": ["scan for module with ability \"${1:grasp}\""],
+    "description": "Discover modules that provide a target ability.",
+  },
+  "Modules: get modules with ability": {
+    "prefix": "get.modules.ability",
+    "body": ["let ${1:mods} = get modules with ability \"${2:grasp}\""],
+    "description": "Query modules that match a given ability.",
+  },
+  "Modules: select best available module": {
+    "prefix": "select.best.module",
+    "body": ["select best ${1:moduleVar}"],
+    "description": "Select the best candidate module from a previously queried set.",
+  },
+  "Modules: run with exclusive access": {
+    "prefix": "run.exclusive",
+    "body": [
+      "run \"${1:TaskOrBlock}\" with exclusive access to \"${2:ModuleName}\"",
+    ],
+    "description": "Run a task or block with exclusive access to a module.",
+  },
+  "Modules: run with shared access": {
+    "prefix": "run.shared",
+    "body": ["run \"${1:TaskOrBlock}\" with shared access"],
+    "description": "Run a task or block declaring shared access semantics.",
+  },
+  "Concurrency: parallel block": {
+    "prefix": "parallel",
+    "body": ["parallel:", "  run \"${1:TaskA}\"", "  run \"${2:TaskB}\""],
+    "description": "Run child tasks in parallel.",
+  },
+  "Async: await run": {
+    "prefix": ["await.run", "await"],
+    "body": [
+      "let ${1:result} = await run \"${2:TaskName}\"",
+      "if ${1:result} == \"${3:expected}\":",
+      "  ${4:// next actions}",
+    ],
+    "description": "Run a task asynchronously and wait for its result.",
+  },
+  "Async: detached run": {
+    "prefix": "detached.run",
+    "body": ["detached run \"${1:TaskName}\""],
+    "description": "Start a task and continue without waiting.",
+  },
+  "Trigger: when object appears": {
+    "prefix": "when.appears",
+    "body": ["when ${1:object} appears:", "  ${2:// actions}"],
+    "description": "Event trigger when a perceived object appears.",
+  },
+  "Trigger: when user says": {
+    "prefix": "when.user",
+    "body": ["when user says \"${1:phrase}\":", "  ${2:// actions}"],
+    "description": "Event trigger activated by a user utterance.",
+  },
+  "Trigger: at time": {
+    "prefix": "at.time",
+    "body": ["at time \"${1:HH:mm}\":", "  ${2:// actions}"],
+    "description": "Time-based trigger.",
+  },
+  "Condition: if / elseif / else": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition}:",
+      "  ${2:// then}",
+      "elseif ${3:condition}:",
+      "  ${4:// else-if}",
+      "else:",
+      "  ${5:// else}",
+    ],
+    "description": "Conditional block with optional branches.",
+  },
+  "Wait/Expect: wait for event": {
+    "prefix": "wait.for",
+    "body": ["wait for ${1:object|event} \"${2:name}\" ${3:to ${4:state}}"],
+    "description": "Wait for an event or state.",
+  },
+  "Wait/Expect: expect within timeout": {
+    "prefix": "expect.within",
+    "body": [
+      "expect ${1:object|output} ${2:condition} within ${3:10} ${4|seconds,minutes|}",
+      "on timeout:",
+      "  ${5:// handling}",
+    ],
+    "description": "Expectation with timeout handling.",
+  },
+  "Exception: on failure with retry": {
+    "prefix": "on.failure",
+    "body": [
+      "${1:action or block}",
+      "on failure:",
+      "  ${2:// handling}",
+      "  retry after ${3:2} ${4|seconds,minutes|}",
+    ],
+    "description": "Failure handler with retry.",
+  },
+  "Exception: on timeout": {
+    "prefix": "on.timeout",
+    "body": ["${1:awaited action}", "on timeout:", "  ${2:// handling}"],
+    "description": "Timeout branch for a preceding action.",
+  },
+  "Exception: on deviation": {
+    "prefix": "on.deviation",
+    "body": [
+      "${1:motion action}",
+      "on deviation:",
+      "  ${2:// correction or retry}",
+    ],
+    "description": "Deviation handler for motion or state drift.",
+  },
+  "Exception: on interruption": {
+    "prefix": "on.interruption",
+    "body": ["${1:action}", "on interruption:", "  ${2:// stop or cleanup}"],
+    "description": "Interruption handler.",
+  },
+  "Recovery: fallback plan": {
+    "prefix": "fallback",
+    "body": [
+      "${1:primary action}",
+      "on failure:",
+      "  fallback:",
+      "    ${2:// alternative actions}",
+    ],
+    "description": "Define an alternative plan when the primary action fails.",
+  },
+  "Abort task immediately": {
+    "prefix": "abort",
+    "body": ["abort"],
+    "description": "Abort the current task.",
+  },
+  "Variables: let (string/number/bool)": {
+    "prefix": "let",
+    "body": ["let ${1:name} = ${2:\"value\"}"],
+    "description": "Declare and assign a variable.",
+  },
+  "Perception: bind object with attributes": {
+    "prefix": "let.object",
+    "body": ["let ${1:target} = object \"${2:mug}\" with ${3:color \"red\"}"],
+    "description": "Bind a perceived object by semantic attributes.",
+  },
+  "Perception: surface/area reference": {
+    "prefix": "let.area",
+    "body": ["let ${1:zone} = area \"${2:KitchenTable}\""],
+    "description": "Bind a named area or surface.",
+  },
+  "Perception: detect all objects": {
+    "prefix": "detect.all",
+    "body": [
+      "let ${1:items} = detect all object \"${2:cup}\" ${3:on \"${4:Table}\"}",
+    ],
+    "description": "Detect a list of semantic objects.",
+  },
+  "Tracking: track object": {
+    "prefix": "track",
+    "body": ["track object \"${1:target}\" as ${2:handle}"],
+    "description": "Continuously track an object's state and position.",
+  },
+  "Tracking: follow user": {
+    "prefix": "follow.user",
+    "body": ["follow user with distance ${1:1.0}m and speed ${2:0.5}"],
+    "description": "Follow the user with a given distance and speed.",
+  },
+  "Observation: observe until state": {
+    "prefix": "observe.object",
+    "body": ["observe object \"${1:device}\" until state == \"${2:done}\""],
+    "description": "Long-running observation of an object's state.",
+  },
+  "System variables: time/room/user": {
+    "prefix": "sys.vars",
+    "body": [
+      "// currentTime, currentRoom, taskName, userName",
+      "if currentRoom == \"${1:LivingRoom}\":",
+      "  ${2:// actions}",
+    ],
+    "description": "Use system context variables.",
+  },
+  "Action: move to target": {
+    "prefix": "move.to",
+    "body": ["move ${1:Arm1} to ${2:\"Target\"}"],
+    "description": "Move a module to a target object or location.",
+  },
+  "Action: grasp": {
+    "prefix": "grasp",
+    "body": ["grasp with ${1:Gripper1}"],
+    "description": "Close the gripper to grasp.",
+  },
+  "Action: release": {
+    "prefix": "release",
+    "body": ["release with ${1:Gripper1}"],
+    "description": "Open the gripper to release.",
+  },
+  "Output: say": {
+    "prefix": "say",
+    "body": ["say \"${1:Text}\""],
+    "description": "Speak a message.",
+  },
+  "Output: display on panel": {
+    "prefix": "display",
+    "body": ["display \"${1:Text}\" on \"${2:Panel1}\""],
+    "description": "Display a message on a named panel.",
+  },
+  "Output: notify user": {
+    "prefix": "notify",
+    "body": ["notify user \"${1:Message}\""],
+    "description": "Send a notification to the user/system.",
+  },
+  "Logging: log message": {
+    "prefix": "log",
+    "body": ["log \"${1:Message}\""],
+    "description": "Write a diagnostic log line.",
+  },
+  "Logging: record structured step": {
+    "prefix": "record",
+    "body": ["record step: action = \"${1:action}\", target = \"${2:target}\""],
+    "description": "Record a structured step into the task log.",
+  },
+  "Reporting: report summary": {
+    "prefix": "report",
+    "body": [
+      "report:",
+      "  summary = \"${1:Summary}\"",
+      "  duration = ${2:0.0}",
+      "  notes = \"${3:Notes}\"",
+    ],
+    "description": "Produce a user-facing or platform summary.",
+  },
+  "Dialogue: ask and store answer": {
+    "prefix": "ask.as",
+    "body": ["ask \"${1:Question}\" as ${2:varName}"],
+    "description": "Ask a question and store the user's answer.",
+  },
+  "Dialogue: ask with choices": {
+    "prefix": "ask.choices",
+    "body": [
+      "ask \"${1:Question}\" as ${2:choice}",
+      "  choices = [\"${3:yes}\", \"${4:no}\"]",
+    ],
+    "description": "Ask a question with discrete choices.",
+  },
+  "Dialogue: simple confirmation flow": {
+    "prefix": "ask.confirm",
+    "body": [
+      "ask \"${1:Proceed?}\" as ${2:confirm}",
+      "if ${2:confirm} == \"${3:yes}\":",
+      "  ${4:// affirmative branch}",
+      "else:",
+      "  ${5:// negative branch}",
+    ],
+    "description": "Simple confirmation pattern.",
+  },
+  "Loop: repeat N times": {
+    "prefix": "repeat",
+    "body": ["repeat ${1:3} times:", "  ${2:// actions}"],
+    "description": "Fixed-count repetition.",
+  },
+  "Loop: while condition": {
+    "prefix": "while",
+    "body": ["while ${1:condition}:", "  ${2:// actions}"],
+    "description": "Condition-controlled loop.",
+  },
+  "Loop: for item in list": {
+    "prefix": "for.in",
+    "body": ["for ${1:item} in ${2:list}:", "  ${3:// actions}"],
+    "description": "Iterate over a list or detection results.",
+  },
+  "Flow: break": {
+    "prefix": "break",
+    "body": ["break"],
+    "description": "Exit the nearest loop.",
+  },
+  "Flow: continue": {
+    "prefix": "continue",
+    "body": ["continue"],
+    "description": "Skip to the next loop iteration.",
+  },
+  "Flow: exit task": {
+    "prefix": "exit",
+    "body": ["exit"],
+    "description": "Exit the current task immediately.",
+  },
+  "Spatial: approach target": {
+    "prefix": "approach",
+    "body": [
+      "approach ${1:target} from ${2|above,front|} with offset [${3:0}, ${4:0}, ${5:0.1}]",
+    ],
+    "description": "Specify approach strategy before an operation.",
+  },
+  "Spatial: adjust pose": {
+    "prefix": "adjust.pose",
+    "body": [
+      "adjust pose of ${1:Arm1}:",
+      "  orientation = [${2:roll}, ${3:pitch}, ${4:yaw}]",
+    ],
+    "description": "Adjust end-effector orientation.",
+  },
+  "Spatial: move along path with avoid": {
+    "prefix": "move.along",
+    "body": [
+      "move ${1:Arm1} along path:",
+      "  to ${2:target}",
+      "  with speed ${3:0.3}",
+      "  avoid ${4:\"obstacles\"}",
+    ],
+    "description": "Define a path with speed and avoidance.",
+  },
+  "Spatial: place on surface with alignment": {
+    "prefix": "place.align",
+    "body": [
+      "place ${1:object} on \"${2:Surface}\":",
+      "  align bottom to surface normal",
+      "  rotate to match ${3:edge|table edge|}",
+    ],
+    "description": "Place with alignment constraints.",
+  },
+  "Spatial: relative position/pose": {
+    "prefix": "pos.relative",
+    "body": [
+      "let ${1:poseVar} = [${2:0.2}, ${3:0}, ${4:0.1}] relative to \"${5:Reference}\"",
+    ],
+    "description": "Relative position expressed against a reference frame.",
+  },
+  "Spatial: transform between frames": {
+    "prefix": "transform",
+    "body": ["let ${1:global} = transform ${2:localVar} to \"${3:world}\""],
+    "description": "Transform a pose or vector into another frame.",
+  },
+  "Spatial: anchor on named region": {
+    "prefix": "anchor",
+    "body": [
+      "place ${1:object} on \"${2:Surface}\" anchor on \"${3:CenterLeft}\"",
+    ],
+    "description": "Anchor a placement to a named region of a surface.",
+  },
+  "Template: task with parameters": {
+    "prefix": "template.task",
+    "body": [
+      "template task \"${1:TemplateName}\" with (${2:params}):",
+      "  ${3:// body}",
+      "end task",
+    ],
+    "description": "Define a reusable parameterized task template.",
+  },
+  "Template: call with positional params": {
+    "prefix": "call.template",
+    "body": ["call \"${1:TemplateName}\" with (${2:args})"],
+    "description": "Call a template with positional parameters.",
+  },
+  "Template: call with named params": {
+    "prefix": "call.template.named",
+    "body": ["call \"${1:TemplateName}\" with (${2:key} = ${3:value})"],
+    "description": "Call a template with named parameters.",
+  },
+  "Dialogue: two-turn preference flow": {
+    "prefix": "dialog.pref",
+    "body": [
+      "ask \"${1:What drink would you like?}\" as ${2:drink}",
+      "say \"Preparing {${2:drink}}.\"",
+      "ask \"${3:With sugar?}\" as ${4:withSugar}",
+      "if ${4:withSugar} == \"yes\":",
+      "  say \"Adding sugar.\"",
+    ],
+    "description": "Two-turn dialogue with variable interpolation.",
+  },
+  "Context: named context block": {
+    "prefix": "context.block",
+    "body": ["context \"${1:FlowName}\":", "  ${2:// scoped interactions}"],
+    "description": "Define a named interaction context.",
+  },
+  "Trace: enable token trace": {
+    "prefix": "token.trace",
+    "body": ["set token_trace = true"],
+    "description": "Enable token flow recording for the current task.",
+  },
+  "Trace: tag a step": {
+    "prefix": "tag.step",
+    "body": ["tag step as \"${1:phase-name}\""],
+    "description": "Tag the current step for later replay or analysis.",
+  },
+  "Trace: replay from tag or index": {
+    "prefix": "replay",
+    "body": ["replay task \"${1:TaskName}\" from \"${2:tag-or-index}\""],
+    "description": "Replay a task from a given checkpoint.",
+  },
+  "Test: testcase skeleton": {
+    "prefix": "testcase",
+    "body": [
+      "testcase \"${1:TestName}\" for task \"${2:TargetTask}\":",
+      "  // simulate state",
+      "  simulate ${3:object} \"${4:name}\" ${5:on \"${6:Table}\"}",
+      "  simulate time is \"${7:HH:mm}\"",
+      "  // run",
+      "  run task \"${2:TargetTask}\"",
+      "  // expect",
+      "  expect ${8:action} ${9:details}",
+      "end testcase",
+    ],
+    "description": "Define a test case with simulate/run/expect sections.",
+  },
+  "Test: simulate inputs": {
+    "prefix": "simulate",
+    "body": ["simulate ${1|object,user,time,currentRoom|} ${2:details}"],
+    "description": "Simulate perception or context inputs.",
+  },
+  "Test: expect action within": {
+    "prefix": "expect.action",
+    "body": ["expect ${1:action} ${2:details} within ${3:3} seconds"],
+    "description": "Expect an action or output within a timeout.",
+  },
+}

@@ -1,0 +1,1248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/roopmodule.schema.json",
+  "title": "ROOP Module Manifest",
+  "description": "Schema for declaring ROOP module capabilities, actions, events, telemetry and safety.\nA .roopmodule.json file describes an abstract ability provider (perception, manipulation, mobility,\ncommunication, environment/IoT control, etc.) that can be invoked from ROOP scripts via verbs and directives.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["module", "capabilities"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Semantic version of this manifest schema consumed by the tooling.",
+      "default": "1.0"
+    },
+    "module": {
+      "$ref": "#/$defs/moduleMeta"
+    },
+    "interfaces": {
+      "$ref": "#/$defs/interfaces"
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/capability"
+      },
+      "description": "Capability declarations exposed by this module. Each capability maps to one or more ROOP verbs."
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "description": "Asynchronous events that the module can emit (used by 'when' and 'on <event>' blocks)."
+    },
+    "telemetry": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/telemetry"
+      },
+      "description": "Streaming or sampled data channels (metrics, states, sensor streams) that can be observed."
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/error"
+      },
+      "description": "Enumerated error types with machine-consumable codes and suggested recovery."
+    },
+    "safety": {
+      "$ref": "#/$defs/safety"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/permission"
+      },
+      "description": "Permissions required by this module (e.g., camera, mic, network)."
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dependency"
+      },
+      "description": "External dependencies (other modules, services, drivers) required at runtime."
+    },
+    "profiles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/profile"
+      },
+      "description": "Named bundles of defaults/limits for different operating contexts (home, factory, demo)."
+    },
+    "testing": {
+      "$ref": "#/$defs/testing"
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/example"
+      },
+      "description": "Short examples showing how the verbs map to this capability in ROOP code."
+    },
+    "x-notes": {
+      "type": "string",
+      "description": "Free-form notes for human readers."
+    }
+  },
+  "$defs": {
+    "moduleMeta": {
+      "type": "object",
+      "required": ["id", "name", "version", "vendor"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "description": "Stable machine id (dns-like). Example: loop.arm.v2"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human readable module name."
+        },
+        "version": {
+          "type": "string",
+          "description": "Semver of this module implementation."
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Author or manufacturer."
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "manipulation",
+            "mobility",
+            "perception",
+            "hri",
+            "environment",
+            "iot",
+            "medical",
+            "logistics",
+            "security",
+            "system",
+            "multi-agent",
+            "nlp",
+            "audio",
+            "vision",
+            "planning"
+          ],
+          "description": "Primary category of the module."
+        },
+        "hardware": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "serial": {
+              "type": "string"
+            },
+            "specs": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "software": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runtime": {
+              "type": "string",
+              "description": "Process or firmware name."
+            },
+            "version": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            }
+          }
+        },
+        "geometry": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "frames": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Coordinate frames exposed by this module (e.g., base_link, camera_optical)."
+            },
+            "mount": {
+              "type": "string",
+              "description": "Mounting location (e.g., base, head, wrist)."
+            },
+            "reachMeters": {
+              "type": "number"
+            },
+            "payloadKg": {
+              "type": "number"
+            }
+          }
+        },
+        "lifecycle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "startup": {
+              "type": "string",
+              "description": "How to initialize the hardware/software."
+            },
+            "shutdown": {
+              "type": "string"
+            },
+            "healthCheck": {
+              "type": "string"
+            },
+            "calibration": {
+              "type": "string"
+            }
+          }
+        },
+        "ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "icon": {
+              "type": "string",
+              "description": "Relative path or data URI."
+            },
+            "docs": {
+              "type": "string",
+              "description": "Link to documentation."
+            }
+          }
+        }
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ros": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "topics": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rosTopic"
+              }
+            },
+            "services": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rosService"
+              }
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rosAction"
+              }
+            },
+            "namespace": {
+              "type": "string"
+            }
+          }
+        },
+        "rest": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "endpoints": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/restEndpoint"
+              }
+            }
+          }
+        },
+        "grpc": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "host": {
+              "type": "string"
+            },
+            "port": {
+              "type": "integer"
+            },
+            "protoPackage": {
+              "type": "string"
+            }
+          }
+        },
+        "serial": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "port": {
+              "type": "string"
+            },
+            "baud": {
+              "type": "integer"
+            },
+            "protocol": {
+              "type": "string"
+            }
+          }
+        },
+        "mqtt": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "broker": {
+              "type": "string"
+            },
+            "topics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "rosTopic": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "qos": {
+          "type": "string"
+        }
+      }
+    },
+    "rosService": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "rosAction": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "restEndpoint": {
+      "type": "object",
+      "required": ["method", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "path": {
+          "type": "string"
+        },
+        "query": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "body": {
+          "$ref": "#/$defs/parameter"
+        }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "required": ["id", "title", "verbs"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$",
+          "description": "Capability id. Example: manipulation.grasp"
+        },
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "manipulation",
+            "mobility",
+            "perception",
+            "communication",
+            "environment",
+            "medical",
+            "logistics",
+            "security",
+            "system",
+            "multi-agent",
+            "nlp",
+            "audio",
+            "vision",
+            "planning",
+            "utilities"
+          ]
+        },
+        "verbs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/verb"
+          },
+          "description": "ROOP verbs supported by this capability. These are invoked by the DSL (e.g., 'grasp')."
+        },
+        "directives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/directive"
+          },
+          "description": "Optional directives that affect this capability's behavior (e.g., pragma, include)."
+        },
+        "synonyms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative words/phrases."
+        },
+        "signature": {
+          "type": "string",
+          "description": "Human-readable signature with placeholders. Example: 'grasp with {gripper} at {pose}'"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          },
+          "description": "Formal parameters for this capability (names used in signature placeholders)."
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "returns": {
+          "$ref": "#/$defs/returnSpec"
+        },
+        "qos": {
+          "$ref": "#/$defs/qos"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/resource"
+          }
+        },
+        "concurrency": {
+          "$ref": "#/$defs/concurrency"
+        },
+        "safety": {
+          "$ref": "#/$defs/safety"
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/example"
+          }
+        },
+        "x-impl": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Implementation-specific config."
+        }
+      }
+    },
+    "verb": {
+      "type": "string",
+      "description": "A ROOP verb token. See enum for built-ins; custom verbs are allowed as well.",
+      "anyOf": [
+        {
+          "enum": [
+            "grasp",
+            "release",
+            "place",
+            "pick",
+            "pick up",
+            "put",
+            "drop",
+            "push",
+            "pull",
+            "slide",
+            "lift",
+            "lower",
+            "carry",
+            "insert",
+            "remove",
+            "pour",
+            "scoop",
+            "stir",
+            "cut",
+            "slice",
+            "chop",
+            "peel",
+            "crack",
+            "mix",
+            "fold",
+            "knead",
+            "spread",
+            "wipe",
+            "scrub",
+            "brush",
+            "sweep",
+            "vacuum",
+            "mop",
+            "squeegee",
+            "open",
+            "close",
+            "twist",
+            "screw",
+            "unscrew",
+            "tighten",
+            "loosen",
+            "connect",
+            "disconnect",
+            "plug",
+            "unplug",
+            "attach",
+            "detach",
+            "lock",
+            "unlock",
+            "latch",
+            "unlatch",
+            "press",
+            "tap",
+            "hold",
+            "point",
+            "handover",
+            "receive",
+            "present",
+            "scan",
+            "weigh",
+            "measure",
+            "move",
+            "navigate",
+            "go",
+            "approach",
+            "retreat",
+            "follow",
+            "lead",
+            "dock",
+            "undock",
+            "rotate",
+            "tilt",
+            "pan",
+            "look",
+            "track",
+            "observe",
+            "scan area",
+            "map",
+            "localize",
+            "explore",
+            "avoid",
+            "stop",
+            "pause",
+            "resume",
+            "align",
+            "climb",
+            "descend",
+            "traverse",
+            "cross",
+            "dock to",
+            "charge",
+            "detect",
+            "recognize",
+            "classify",
+            "segment",
+            "locate",
+            "estimate",
+            "read",
+            "ocr",
+            "barcode",
+            "qr",
+            "monitor",
+            "count",
+            "reidentify",
+            "measure temperature",
+            "measure humidity",
+            "measure air quality",
+            "detect human",
+            "detect face",
+            "detect gesture",
+            "estimate emotion",
+            "track object",
+            "say",
+            "display",
+            "notify",
+            "log",
+            "ask",
+            "confirm",
+            "translate",
+            "transcribe",
+            "play",
+            "record",
+            "stream",
+            "call",
+            "message",
+            "show",
+            "listen",
+            "turn on",
+            "turn off",
+            "toggle",
+            "set",
+            "adjust",
+            "increase",
+            "decrease",
+            "dim",
+            "brighten",
+            "heat",
+            "cool",
+            "fan on",
+            "fan off",
+            "open door",
+            "close door",
+            "open window",
+            "close window",
+            "open blinds",
+            "close blinds",
+            "open curtains",
+            "close curtains",
+            "brew",
+            "cook",
+            "bake",
+            "boil",
+            "water plants",
+            "feed pet",
+            "refill",
+            "dispense",
+            "sanitize",
+            "sterilize",
+            "disinfect",
+            "measure heart rate",
+            "measure spo2",
+            "measure blood pressure",
+            "measure respiration",
+            "patrol",
+            "guard",
+            "alarm",
+            "alert",
+            "record",
+            "stream video",
+            "lock door",
+            "unlock door",
+            "assign",
+            "dispatch",
+            "synchronize",
+            "broadcast",
+            "negotiate",
+            "yield",
+            "request",
+            "share map",
+            "use module",
+            "configure",
+            "calibrate",
+            "reset",
+            "restart",
+            "shutdown",
+            "sleep",
+            "wake",
+            "ping",
+            "diagnose",
+            "update firmware",
+            "plan",
+            "observe",
+            "track",
+            "navigate to"
+          ]
+        },
+        {
+          "type": "string",
+          "minLength": 2
+        }
+      ]
+    },
+    "directive": {
+      "type": "string",
+      "description": "Language directive token; recognized in grammar and may influence compilation.",
+      "enum": [
+        "import",
+        "include",
+        "pragma",
+        "use module",
+        "template task",
+        "start task",
+        "end task"
+      ]
+    },
+    "parameter": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][\\w.-]*$"
+        },
+        "type": {
+          "$ref": "#/$defs/paramType"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "unit": {
+          "$ref": "#/$defs/unit"
+        },
+        "enum": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "exclusiveMinimum": {
+          "type": "number"
+        },
+        "exclusiveMaximum": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "default": {},
+        "examples": {
+          "type": "array",
+          "items": {}
+        },
+        "x-linkedTo": {
+          "type": "string",
+          "description": "Link to sensor/telemetry field name."
+        }
+      }
+    },
+    "paramType": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "array",
+            "object",
+            "pose",
+            "vector3",
+            "quaternion",
+            "duration",
+            "datetime",
+            "color",
+            "percentage",
+            "speed",
+            "acceleration",
+            "temperature",
+            "pressure",
+            "distance",
+            "angle",
+            "image",
+            "audio",
+            "video",
+            "file",
+            "enum"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "JSON Pointer to complex type definition in this schema."
+            }
+          }
+        }
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "m",
+        "cm",
+        "mm",
+        "km",
+        "in",
+        "ft",
+        "rad",
+        "deg",
+        "s",
+        "ms",
+        "min",
+        "h",
+        "kg",
+        "g",
+        "lb",
+        "m/s",
+        "m/s^2",
+        "C",
+        "F",
+        "K",
+        "%",
+        "ppm",
+        "Pa",
+        "kPa",
+        "bar",
+        "N",
+        "Nm",
+        "W",
+        "Wh",
+        "V",
+        "A",
+        "Hz",
+        "dB",
+        "lux"
+      ]
+    },
+    "returnSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["void", "boolean", "number", "string", "object", "array"]
+        },
+        "schema": {
+          "type": "object",
+          "description": "JSON Schema of returned payload when type is object/array."
+        },
+        "successEvent": {
+          "type": "string",
+          "description": "Event name emitted on success."
+        },
+        "failureEvent": {
+          "type": "string",
+          "description": "Event name emitted on failure."
+        }
+      }
+    },
+    "qos": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "latencyMs": {
+          "type": "number"
+        },
+        "reliability": {
+          "type": "string",
+          "enum": ["best-effort", "reliable"]
+        },
+        "deadlineMs": {
+          "type": "number"
+        },
+        "rateHz": {
+          "type": "number"
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "realtime": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "arm",
+            "gripper",
+            "base",
+            "camera",
+            "lidar",
+            "mic",
+            "speaker",
+            "display",
+            "cpu",
+            "gpu",
+            "network",
+            "storage",
+            "custom"
+          ]
+        },
+        "access": {
+          "type": "string",
+          "enum": ["exclusive", "shared"],
+          "default": "exclusive"
+        }
+      }
+    },
+    "concurrency": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["queue", "preempt", "reject", "cancel-previous"]
+        },
+        "maxParallel": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mutexGroup": {
+          "type": "string"
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hazards": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "restrictions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "emergencyStop": {
+          "type": "boolean",
+          "default": true
+        },
+        "speedLimit": {
+          "type": "number",
+          "description": "m/s limit when near humans",
+          "minimum": 0
+        },
+        "forceLimit": {
+          "type": "number",
+          "description": "N limit for contact ops",
+          "minimum": 0
+        },
+        "safeZones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiresSupervision": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "permission": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "camera",
+            "microphone",
+            "speaker",
+            "network",
+            "cloud",
+            "robot-base",
+            "arm",
+            "gripper",
+            "display",
+            "files",
+            "location",
+            "battery",
+            "security-locks",
+            "medical-sensors",
+            "custom"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["debug", "info", "notice", "warning", "error", "critical"]
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "scalar",
+            "pose",
+            "twist",
+            "wrench",
+            "image",
+            "pointcloud",
+            "audio",
+            "video",
+            "occupancy",
+            "battery",
+            "temperature",
+            "humidity",
+            "airquality",
+            "custom"
+          ]
+        },
+        "schema": {
+          "type": "object"
+        },
+        "rateHz": {
+          "type": "number"
+        },
+        "unit": {
+          "$ref": "#/$defs/unit"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": {
+          "type": "string"
+        },
+        "suggestedRecovery": {
+          "type": "string"
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "defaults": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/parameter"
+          }
+        }
+      }
+    },
+    "testing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "smoke": {
+          "type": "string",
+          "description": "Simple end-to-end smoke test description or command."
+        },
+        "simulations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fixtures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "example": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "roop": {
+          "type": "string",
+          "description": "Short ROOP snippet showing verb usage."
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": "1.0",
+      "module": {
+        "id": "loop.gripper.v2",
+        "name": "Dual-Finger Gripper",
+        "version": "2.1.0",
+        "vendor": "Loop Robotics",
+        "category": "manipulation",
+        "geometry": {
+          "mount": "wrist",
+          "payloadKg": 2.0
+        }
+      },
+      "capabilities": [
+        {
+          "id": "manipulation.grasp",
+          "title": "Grasp object",
+          "category": "manipulation",
+          "verbs": ["grasp", "release", "hold"],
+          "signature": "grasp with {gripper} at {pose}",
+          "parameters": [
+            {
+              "name": "gripper",
+              "type": "string"
+            },
+            {
+              "name": "pose",
+              "type": "pose"
+            },
+            {
+              "name": "force",
+              "type": "number",
+              "unit": "N",
+              "minimum": 0,
+              "maximum": 80,
+              "default": 30
+            }
+          ],
+          "resources": [
+            {
+              "name": "gripper",
+              "kind": "gripper",
+              "access": "exclusive"
+            }
+          ],
+          "qos": {
+            "latencyMs": 200,
+            "reliability": "reliable"
+          },
+          "examples": [
+            {
+              "name": "Basic grasp",
+              "roop": "grasp with Gripper1"
+            },
+            {
+              "name": "Release",
+              "roop": "release with Gripper1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
